@@ -122,6 +122,7 @@ giggle_SOURCES =				\
 	giggle-view-summary.h			\
 	giggle-window.c				\
 	giggle-window.h				\
+	giggle.png_h				\
 	giggle-main.c
 
 giggle_LDADD = 					\
@@ -232,7 +233,11 @@ giggle-marshal.c: giggle-marshal.list
 
 marshal-main.c: giggle-marshal.c giggle-marshal.h
 
+giggle.png_h: $(top_srcdir)/data/giggle.png
+	gdk-pixbuf-csource --name="`basename $< .png`" --struct $< > $@
+
 BUILT_SOURCES =					\
+	giggle.png_h				\
 	giggle-marshal.h			\
 	giggle-marshal.c			\
 	giggle-enums.h				\
