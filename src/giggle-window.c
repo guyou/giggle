@@ -64,6 +64,11 @@ struct GiggleWindowPriv {
 	GtkWidget           *diff_current_window;
 
 	GiggleConfiguration *configuration;
+
+	gint                 width;
+	gint                 height;
+	gint                 x;
+	gint                 y;
 };
 
 enum {
@@ -73,6 +78,8 @@ enum {
 
 
 static void window_finalize                       (GObject           *object);
+static gboolean window_configure_event            (GtkWidget           *widget,
+						   GdkEventConfigure   *event);
 
 static void window_add_widget_cb                  (GtkUIManager      *merge,
 						   GtkWidget         *widget,
@@ -277,8 +284,10 @@ static void
 giggle_window_class_init (GiggleWindowClass *class)
 {
 	GObjectClass   *object_class = G_OBJECT_CLASS (class);
+	GtkWidgetClass *widget_class = GTK_WIDGET_CLASS (class);
 
 	object_class->finalize = window_finalize;
+	widget_class->configure_event = window_configure_event;
 
 	g_type_class_add_private (object_class, sizeof (GiggleWindowPriv));
 }
@@ -397,26 +406,28 @@ window_configuration_committed (GiggleConfiguration *configuration,
 }
 
 static void
-save_state_and_exit (GiggleWindow *window)
+save_state (GiggleWindow *window)
 {
 	GiggleWindowPriv *priv;
 	gboolean          compact;
-	gint              w, h, x, y;
 	gchar             buf[25];
+	gboolean          maximized;
 
 	priv = GET_PRIV (window);
 
-	gtk_window_get_size (GTK_WINDOW (window), &w, &h);
-	gtk_window_get_position (GTK_WINDOW (window), &x, &y);
-
-	g_snprintf (buf, sizeof (buf), "%dx%d+%d+%d", w, h, x, y);
+	g_snprintf (buf, sizeof (buf), "%dx%d+%d+%d", priv->width, priv->height, priv->x, priv->y);
 	giggle_configuration_set_field (priv->configuration,
 					CONFIG_FIELD_MAIN_WINDOW_GEOMETRY, buf);
 
+	maximized = gdk_window_get_state (GTK_WIDGET (window)->window) & GDK_WINDOW_STATE_MAXIMIZED;
+	giggle_configuration_set_boolean_field (priv->configuration,
+						CONFIG_FIELD_MAIN_WINDOW_MAXIMIZED,
+						maximized);
+
 	compact = giggle_view_history_get_compact_mode (GIGGLE_VIEW_HISTORY (priv->history_view));
-	giggle_configuration_set_field (priv->configuration,
-					CONFIG_FIELD_COMPACT_MODE,
-					compact ? "true" : "false");
+	giggle_configuration_set_boolean_field (priv->configuration,
+						CONFIG_FIELD_COMPACT_MODE,
+						compact);
 
 	giggle_configuration_commit (priv->configuration,
 				     window_configuration_committed,
@@ -428,7 +439,7 @@ window_delete_event_cb (GtkWidget *widget,
 			GdkEvent  *event,
 			gpointer   user_data)
 {
-	save_state_and_exit (GIGGLE_WINDOW (widget));
+	save_state (GIGGLE_WINDOW (widget));
 	gtk_widget_hide (widget);
 	return TRUE;
 }
@@ -438,17 +449,14 @@ window_bind_state (GiggleWindow *window)
 {
 	GiggleWindowPriv *priv;
 	GtkAction *action;
-	const char *geom_str, *compact_str;
-	gboolean compact = FALSE, found_geometry = FALSE;
+	const char *geom_str;
+	gboolean compact, found_geometry = FALSE;
 
 	priv = GET_PRIV (window);
 	g_assert (priv->configuration);
 
-	compact_str = giggle_configuration_get_field (priv->configuration, CONFIG_FIELD_COMPACT_MODE);
-	if (compact_str) {
-		compact = strcmp (compact_str, "true") == 0;
-	}
 	/* set the toggle menu item to indicate the current compact setting */
+	compact = giggle_configuration_get_boolean_field (priv->configuration, CONFIG_FIELD_COMPACT_MODE);
 	action = gtk_ui_manager_get_action (priv->ui_manager, COMPACT_MODE);
 	gtk_toggle_action_set_active (GTK_TOGGLE_ACTION (action), compact);
 	giggle_view_history_set_compact_mode (GIGGLE_VIEW_HISTORY (priv->history_view), compact);
@@ -460,6 +468,10 @@ window_bind_state (GiggleWindow *window)
 
 	if (!found_geometry) {
 		gtk_window_set_default_size (GTK_WINDOW (window), 700, 550);
+	}
+
+	if (giggle_configuration_get_boolean_field (priv->configuration, CONFIG_FIELD_MAIN_WINDOW_MAXIMIZED)) {
+		gtk_window_maximize (GTK_WINDOW (window));
 	}
 
 	gtk_widget_show (GTK_WIDGET (window));
@@ -552,7 +564,7 @@ window_finalize (GObject *object)
 	GiggleWindowPriv *priv;
 
 	priv = GET_PRIV (object);
-	
+
 	g_object_unref (priv->ui_manager);
 	g_object_unref (priv->git);
 	g_object_unref (priv->recent_manager);
@@ -560,6 +572,20 @@ window_finalize (GObject *object)
 	g_object_unref (priv->configuration);
 
 	G_OBJECT_CLASS (giggle_window_parent_class)->finalize (object);
+}
+
+static gboolean
+window_configure_event (GtkWidget         *widget,
+			GdkEventConfigure *event)
+{
+	GiggleWindowPriv *priv = GET_PRIV (widget);
+
+	if (! (gdk_window_get_state (widget->window) & GDK_WINDOW_STATE_MAXIMIZED)) {
+		gtk_window_get_size (GTK_WINDOW (widget), &priv->width, &priv->height);
+		gtk_window_get_position (GTK_WINDOW (widget), &priv->x, &priv->y);
+	}
+
+	return GTK_WIDGET_CLASS (giggle_window_parent_class)->configure_event (widget, event);;
 }
 
 static void
@@ -723,7 +749,7 @@ static void
 window_action_quit_cb (GtkAction    *action,
 		       GiggleWindow *window)
 {
-	save_state_and_exit (window);
+	save_state (window);
 	gtk_widget_hide (GTK_WIDGET (window));
 }
 
@@ -813,7 +839,7 @@ window_action_diff_cb (GtkAction    *action,
 
 	if (!priv->diff_current_window) {
 		priv->diff_current_window = giggle_diff_window_new ();
- 
+
 		gtk_window_set_transient_for (GTK_WINDOW (priv->diff_current_window),
 					      GTK_WINDOW (window));
 		g_signal_connect (priv->diff_current_window, "delete-event",
