@@ -38,6 +38,10 @@
 #include "giggle-history.h"
 #include "eggfindbar.h"
 
+#ifdef GDK_WINDOWING_QUARTZ
+#include "ige-mac-menu.h"
+#endif
+
 typedef struct GiggleWindowPriv GiggleWindowPriv;
 
 struct GiggleWindowPriv {
@@ -193,7 +197,7 @@ static const GtkActionEntry action_entries[] = {
 	  G_CALLBACK (window_action_personal_details_cb)
 	},
 	{ "Find", GTK_STOCK_FIND,
-	  N_("_Find..."), NULL, N_("Find..."),
+	  N_("_Find..."), "slash", N_("Find..."),
 	  G_CALLBACK (window_action_find_cb)
 	},
 	{ "FindNext", NULL,
@@ -339,6 +343,30 @@ window_create_menu (GiggleWindow *window)
 				  G_CALLBACK (window_recent_repositories_update), window);
 
 	window_recent_repositories_update (window);
+
+#ifdef GDK_WINDOWING_QUARTZ
+	{
+		GtkWidget       *menu;
+		GtkWidget       *item;
+		IgeMacMenuGroup *group;
+
+		menu = gtk_ui_manager_get_widget (priv->ui_manager,
+						  "/MainMenubar");
+
+		ige_mac_menu_set_menu_bar (GTK_MENU_SHELL (menu));
+		gtk_widget_hide (menu);
+
+		item = gtk_ui_manager_get_widget (priv->ui_manager,
+						  "/MainMenubar/ProjectMenu/Quit");
+		ige_mac_menu_set_quit_menu_item (GTK_MENU_ITEM (item));
+
+		item = gtk_ui_manager_get_widget (priv->ui_manager,
+						  "/MainMenubar/HelpMenu/About");
+		group =  ige_mac_menu_add_app_menu_group ();
+		ige_mac_menu_add_app_menu_item  (group, GTK_MENU_ITEM (item),
+						 _("About Giggle"));
+	}
+#endif
 }
 
 static void
@@ -475,6 +503,9 @@ window_bind_state (GiggleWindow *window)
 	}
 
 	gtk_widget_show (GTK_WIDGET (window));
+	if (priv->diff_current_window) {
+		gtk_widget_show (priv->diff_current_window);
+	}
 
 	/* set up a callback to save the new UI state on application exit */
 	g_signal_connect (GTK_WINDOW (window), "delete-event",
@@ -833,22 +864,7 @@ static void
 window_action_diff_cb (GtkAction    *action,
 		       GiggleWindow *window)
 {
-	GiggleWindowPriv *priv;
-
-	priv = GET_PRIV (window);
-
-	if (!priv->diff_current_window) {
-		priv->diff_current_window = giggle_diff_window_new ();
-
-		gtk_window_set_transient_for (GTK_WINDOW (priv->diff_current_window),
-					      GTK_WINDOW (window));
-		g_signal_connect (priv->diff_current_window, "delete-event",
-				  G_CALLBACK (gtk_widget_hide_on_delete), NULL);
-		g_signal_connect_after (priv->diff_current_window, "response",
-					G_CALLBACK (gtk_widget_hide), NULL);
-	}
-
-	gtk_widget_show (priv->diff_current_window);
+	giggle_window_show_diff_window (window);
 }
 
 static void
@@ -1041,6 +1057,7 @@ window_action_about_cb (GtkAction    *action,
 			       "name", "Giggle",
 			       "copyright", "Copyright \xc2\xa9 2007 Imendio AB",
 			       "translator-credits", _("translator-credits"),
+			       "logo-icon-name", PACKAGE,
 			       "version", VERSION,
 			       "authors", authors,
 			       NULL);
@@ -1128,7 +1145,7 @@ window_action_history_refresh (GtkAction    *action,
 
 	priv = GET_PRIV (window);
 	directory = giggle_git_get_directory (priv->git);
-	giggle_window_set_directory (window, g_strdup(directory));
+	giggle_window_set_directory (window, directory);
 }
 
 GtkWidget *
@@ -1147,5 +1164,28 @@ giggle_window_get_git (GiggleWindow *self)
 	g_return_val_if_fail (GIGGLE_IS_WINDOW (self), NULL);
 
 	return GET_PRIV (self)->git;
+}
+
+void
+giggle_window_show_diff_window (GiggleWindow *self)
+{
+	GiggleWindowPriv *priv;
+
+	priv = GET_PRIV (self);
+
+	if (!priv->diff_current_window) {
+		priv->diff_current_window = giggle_diff_window_new ();
+
+		gtk_window_set_transient_for (GTK_WINDOW (priv->diff_current_window),
+					      GTK_WINDOW (self));
+		g_signal_connect (priv->diff_current_window, "delete-event",
+				  G_CALLBACK (gtk_widget_hide_on_delete), NULL);
+		g_signal_connect_after (priv->diff_current_window, "response",
+					G_CALLBACK (gtk_widget_hide), NULL);
+	}
+
+	if (GTK_WIDGET_REALIZED (self)) {
+		gtk_widget_show (priv->diff_current_window);
+	}
 }
 

@@ -181,7 +181,6 @@ git_revisions_handle_output (GiggleJob   *job,
 			     gsize        output_len)
 {
 	GiggleGitRevisionsPriv *priv;
-	GiggleRevision         *revision;
 	GHashTable             *revisions_hash;
 	gchar                  *str;
 
@@ -192,6 +191,8 @@ git_revisions_handle_output (GiggleJob   *job,
 						g_free, g_object_unref);
 
 	while (strlen (str) > 0) {
+		GiggleRevision *revision;
+
 		revision = git_revisions_get_revision (str, revisions_hash);
 		priv->revisions = g_list_prepend (priv->revisions, revision);
 
@@ -238,20 +239,18 @@ git_revisions_get_committer_info (GiggleRevision  *revision,
 				  gchar          **author,
 				  struct tm      **tm)
 {
-	gchar *date, **strarr;
+	const gchar *str;
+	const gchar *ch;
 
-	/* parse author */
-	strarr = g_strsplit (line, " <", 2);
-	*author = g_strdup (strarr[0]);
-	g_strfreev (strarr);
+	str = line;
+	
+	ch = strstr (str, " <");
+	*author = g_strndup (str, ch - str);
+	str = ch + 2;
 
-	/* parse timestamp */
-	strarr = g_strsplit (line, "> ", 2);
-	date = g_strdup (strarr[1]);
-	g_strfreev (strarr);
+	ch = strstr (str, "> ");
 
-	*tm = git_revisions_get_time (date);
-	g_free (date);
+	*tm = git_revisions_get_time (ch + 2);
 }
 
 static void

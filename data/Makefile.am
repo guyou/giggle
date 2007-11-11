@@ -9,4 +9,4 @@ CLEANFILES=$(desktop_DATA)
 
 @INTLTOOL_DESKTOP_RULE@
 
-EXTRA_DIST=giggle.desktop.in giggle.png
+EXTRA_DIST=giggle.desktop.in
