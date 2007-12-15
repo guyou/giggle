@@ -1,7 +1,7 @@
 dnl Process this file with autoconf to produce a configure script.
 AC_PREREQ(2.52)
  
-AC_INIT(giggle,0.3,http://developer.imendio.com/issues/browse/GGL)
+AC_INIT(giggle,0.4,http://developer.imendio.com/issues/browse/GGL)
 AC_CONFIG_SRCDIR(src/giggle-main.c)
 AM_INIT_AUTOMAKE(AC_PACKAGE_NAME, AC_PACKAGE_VERSION)
 
@@ -30,7 +30,7 @@ dnl  ------------------
 PKG_CHECK_MODULES(GIGGLE, [
         glib-2.0 >= 2.12
 	gtk+-2.0 >= 2.10
-	gtksourceview-1.0 > 1.8
+	gtksourceview-2.0 > 2.0
 	libglade-2.0 > 2.4
 ])
 
