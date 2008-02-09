@@ -23,16 +23,16 @@
 #include <gtk/gtk.h>
 #include <string.h>
 
-#include "giggle-git.h"
+#include "libgiggle/giggle-git.h"
 #include "giggle-file-list.h"
 #include "giggle-diff-window.h"
-#include "giggle-git-ignore.h"
-#include "giggle-git-list-files.h"
-#include "giggle-git-add.h"
-#include "giggle-git-diff.h"
-#include "giggle-git-diff-tree.h"
-#include "giggle-revision.h"
-#include "giggle-enums.h"
+#include "libgiggle/giggle-git-ignore.h"
+#include "libgiggle/giggle-git-list-files.h"
+#include "libgiggle/giggle-git-add.h"
+#include "libgiggle/giggle-git-diff.h"
+#include "libgiggle/giggle-git-diff-tree.h"
+#include "libgiggle/giggle-revision.h"
+#include "libgiggle/giggle-enums.h"
 
 typedef struct GiggleFileListPriv GiggleFileListPriv;
 
@@ -1421,7 +1421,7 @@ file_list_cell_data_background_func (GtkCellLayout   *cell_layout,
 				     GtkTreeIter     *iter,
 				     gpointer         data)
 {
-	GdkColor            color = { 0x0, 0xed00, 0xd400, 0x0 };
+	GdkColor            color;
 	GiggleFileListPriv *priv;
 	GiggleFileList     *file_list;
 	gboolean            highlight;
@@ -1429,6 +1429,7 @@ file_list_cell_data_background_func (GtkCellLayout   *cell_layout,
 
 	file_list = GIGGLE_FILE_LIST (data);
 	priv = GET_PRIV (file_list);
+	color = GTK_WIDGET (file_list)->style->bg[GTK_STATE_NORMAL];
 
 	gtk_tree_model_get (tree_model, iter,
 			    COL_REL_PATH, &rel_path,

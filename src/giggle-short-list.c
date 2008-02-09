@@ -28,16 +28,16 @@
 #include <gtk/gtklabel.h>
 #include <gtk/gtkscrolledwindow.h>
 #include <gtk/gtkstock.h>
-#include "giggle-marshal.h"
+#include "libgiggle/giggle-marshal.h"
 
 typedef struct GiggleShortListPriv GiggleShortListPriv;
 
 struct GiggleShortListPriv {
-	GtkWidget   * label;
-	GtkWidget   * content_box;
-	GtkWidget   * more_button;
+	GtkWidget    *label;
+	GtkWidget    *content_box;
+	GtkWidget    *more_button;
 
-	GtkTreeModel* model;
+	GtkTreeModel *model;
 };
 
 enum {
