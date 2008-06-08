@@ -38,9 +38,18 @@ struct GiggleViewStashPriv {
 	GtkWidget *save_button;
 	GtkWidget *save_entry;
 	
-	/* git clear related */
+	/* git stash clear related */
 	GiggleJob *clear_job;
 	GtkWidget *clear_button;
+
+	/* git stash apply related */
+	GtkWidget *apply_button;
+
+	/* git stash pop related */
+	GtkWidget *pop_button;
+
+	/* git stash drop related */
+	GtkWidget *drop_button;
 };
 
 static void    view_stash_finalize              (GObject           *object);
@@ -87,6 +96,12 @@ view_stash_update_data (GiggleViewStash *view)
 
 	priv = GET_PRIV (view);
 
+	/* not yet implemented */
+	gtk_widget_set_sensitive(priv->apply_button, FALSE);
+	/* not yet implemented */
+	gtk_widget_set_sensitive(priv->pop_button, FALSE);
+	/* not yet implemented */
+	gtk_widget_set_sensitive(priv->drop_button, FALSE);
 }
 
 static void
@@ -113,6 +128,15 @@ giggle_view_stash_init (GiggleViewStash *view)
 	
 	g_signal_connect(G_OBJECT(priv->clear_button), "clicked", G_CALLBACK(view_stash_clear), view);
 	
+	/* git stash apply */
+	priv->apply_button = glade_xml_get_widget (xml, "apply_button");
+	
+	/* git stash pop */
+	priv->pop_button = glade_xml_get_widget (xml, "pop_button");
+	
+	/* git stash drop */
+	priv->drop_button = glade_xml_get_widget (xml, "drop_button");
+
 	g_object_unref (xml);
 
 	priv->git = giggle_git_get ();
