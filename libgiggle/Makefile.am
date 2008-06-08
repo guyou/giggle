@@ -88,6 +88,8 @@ libgiggle_git_la_SOURCES = \
 	giggle-git-refs.h \
 	giggle-git-revisions.c \
 	giggle-git-revisions.h \
+	giggle-git-stash-clear.c \
+	giggle-git-stash-clear.h \
 	giggle-git-stash-save.c \
 	giggle-git-stash-save.h \
 	giggle-git-write-config.c \

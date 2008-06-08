@@ -25,6 +25,7 @@
 
 #include "libgiggle/giggle-git.h"
 #include "libgiggle/giggle-git-stash-save.h"
+#include "libgiggle/giggle-git-stash-clear.h"
 #include "giggle-view-stash.h"
 
 typedef struct GiggleViewStashPriv GiggleViewStashPriv;
@@ -36,6 +37,10 @@ struct GiggleViewStashPriv {
 	GiggleJob *save_job;
 	GtkWidget *save_button;
 	GtkWidget *save_entry;
+	
+	/* git clear related */
+	GiggleJob *clear_job;
+	GtkWidget *clear_button;
 };
 
 static void    view_stash_finalize              (GObject           *object);
@@ -48,6 +53,15 @@ view_stash_save (GtkButton *button, void *data);
 
 static void
 view_stash_save_job_callback (GiggleGit *git,
+			      GiggleJob *job,
+			      GError    *error,
+			      gpointer   user_data);
+
+static void
+view_stash_clear (GtkButton *button, void *data);
+
+static void
+view_stash_clear_job_callback (GiggleGit *git,
 			      GiggleJob *job,
 			      GError    *error,
 			      gpointer   user_data);
@@ -93,6 +107,11 @@ giggle_view_stash_init (GiggleViewStash *view)
 	priv->save_entry = glade_xml_get_widget (xml, "save_log");
 	
 	g_signal_connect(G_OBJECT(priv->save_button), "clicked", G_CALLBACK(view_stash_save), view);
+	
+	/* git stash clear */
+	priv->clear_button = glade_xml_get_widget (xml, "clear_button");
+	
+	g_signal_connect(G_OBJECT(priv->clear_button), "clicked", G_CALLBACK(view_stash_clear), view);
 	
 	g_object_unref (xml);
 
@@ -163,7 +182,7 @@ view_stash_save_job_callback (GiggleGit *git,
 						 GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
 						 GTK_MESSAGE_ERROR,
 						 GTK_BUTTONS_CLOSE,
-						 _("An error ocurred when stashing:\n%s"),
+						 _("An error ocurred when stash saving:\n%s"),
 						 error->message);
 
 		gtk_dialog_run (GTK_DIALOG (dialog));
@@ -175,6 +194,76 @@ view_stash_save_job_callback (GiggleGit *git,
 
 	g_object_unref (priv->save_job);
 	priv->save_job = NULL;
+}
+
+static void
+view_stash_clear (GtkButton *button,
+                  void      *data)
+{
+	GiggleViewStash     *view = GIGGLE_VIEW_STASH(data);
+	GiggleViewStashPriv *priv;
+	GtkWidget           *dialog;
+	gint                 confirm;
+
+	dialog = gtk_message_dialog_new(GTK_WINDOW (gtk_widget_get_toplevel (GTK_WIDGET (view))),
+			                GTK_DIALOG_DESTROY_WITH_PARENT,
+                                        GTK_MESSAGE_WARNING,
+                                        GTK_BUTTONS_OK_CANCEL,
+                                        _("You are about to remove all the stashed states.\n"
+					  "Note that those states will then be subject to pruning, and may be difficult or impossible to recover.\n"
+					  "Do you want to continue?"));
+	gtk_window_set_title(GTK_WINDOW(dialog), _("Clear stashed states"));
+        confirm = gtk_dialog_run (GTK_DIALOG (dialog));
+	gtk_widget_destroy (dialog);
+	
+	if (confirm != GTK_RESPONSE_OK)
+		return;
+	
+	priv = GET_PRIV (view);
+
+	if (priv->clear_job) {
+		giggle_git_cancel_job (priv->git, priv->clear_job);
+		g_object_unref (priv->clear_job);
+		priv->clear_job = NULL;
+	}
+
+	priv->clear_job = giggle_git_stash_clear_new ();
+
+	giggle_git_run_job (priv->git,
+			    priv->clear_job,
+			    view_stash_clear_job_callback,
+			    view);
+}
+
+static void
+view_stash_clear_job_callback (GiggleGit *git,
+			       GiggleJob *job,
+			       GError    *error,
+			       gpointer   user_data)
+{
+	GiggleViewStashPriv *priv;
+
+	priv = GET_PRIV (user_data);
+
+	if (error) {
+		GtkWidget *dialog;
+
+		dialog = gtk_message_dialog_new (NULL,
+						 GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
+						 GTK_MESSAGE_ERROR,
+						 GTK_BUTTONS_CLOSE,
+						 _("An error ocurred when stash clearing:\n%s"),
+						 error->message);
+
+		gtk_dialog_run (GTK_DIALOG (dialog));
+		gtk_widget_destroy (dialog);
+	} else {
+		/* Tell GiggleGit listeners to update */
+		giggle_git_changed (priv->git);
+	}
+
+	g_object_unref (priv->clear_job);
+	priv->clear_job = NULL;
 }
 
 GtkWidget *
