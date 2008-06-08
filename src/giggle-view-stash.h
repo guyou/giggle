@@ -29,20 +29,20 @@
 G_BEGIN_DECLS
 
 #define GIGGLE_TYPE_VIEW_STASH            (giggle_view_stash_get_type ())
-#define GIGGLE_VIEW_STASH(obj)            (G_TYPE_CHECK_INSTANCE_CAST ((obj), GIGGLE_TYPE_VIEW_STASH, GiggleViewCommit))
-#define GIGGLE_VIEW_STASH_CLASS(klass)    (G_TYPE_CHECK_CLASS_CAST ((klass), GIGGLE_TYPE_VIEW_STASH, GiggleViewCommitClass))
+#define GIGGLE_VIEW_STASH(obj)            (G_TYPE_CHECK_INSTANCE_CAST ((obj), GIGGLE_TYPE_VIEW_STASH, GiggleViewStash))
+#define GIGGLE_VIEW_STASH_CLASS(klass)    (G_TYPE_CHECK_CLASS_CAST ((klass), GIGGLE_TYPE_VIEW_STASH, GiggleViewStashClass))
 #define GIGGLE_IS_VIEW_STASH(obj)         (G_TYPE_CHECK_INSTANCE_TYPE ((obj), GIGGLE_TYPE_VIEW_STASH))
 #define GIGGLE_IS_VIEW_STASH_CLASS(klass) (G_TYPE_CHECK_CLASS_TYPE ((klass), GIGGLE_TYPE_VIEW_STASH))
-#define GIGGLE_VIEW_STASH_GET_CLASS(obj)  (G_TYPE_INSTANCE_GET_CLASS ((obj), GIGGLE_TYPE_VIEW_STASH, GiggleViewCommitClass))
+#define GIGGLE_VIEW_STASH_GET_CLASS(obj)  (G_TYPE_INSTANCE_GET_CLASS ((obj), GIGGLE_TYPE_VIEW_STASH, GiggleViewStashClass))
 
-typedef struct GiggleViewCommit      GiggleViewCommit;
-typedef struct GiggleViewCommitClass GiggleViewCommitClass;
+typedef struct GiggleViewStash      GiggleViewStash;
+typedef struct GiggleViewStashClass GiggleViewStashClass;
 
-struct GiggleViewCommit {
+struct GiggleViewStash {
 	GiggleView parent_instance;
 };
 
-struct GiggleViewCommitClass {
+struct GiggleViewStashClass {
 	GiggleViewClass parent_class;
 };
 

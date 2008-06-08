@@ -24,48 +24,62 @@
 #include <glade/glade.h>
 
 #include "libgiggle/giggle-git.h"
+#include "libgiggle/giggle-git-stash-save.h"
 #include "giggle-view-stash.h"
 
-typedef struct GiggleViewCommitPriv GiggleViewCommitPriv;
+typedef struct GiggleViewStashPriv GiggleViewStashPriv;
 
-struct GiggleViewCommitPriv {
+struct GiggleViewStashPriv {
 	GiggleGit *git;
+	
+	/* git stash save related */
+	GiggleJob *save_job;
+	GtkWidget *save_button;
+	GtkWidget *save_entry;
 };
 
 static void    view_stash_finalize              (GObject           *object);
 
 static void    view_stash_project_changed_cb    (GObject           *object,
-						   GParamSpec        *arg,
-						   GiggleViewCommit *view);
-
-G_DEFINE_TYPE (GiggleViewCommit, giggle_view_stash, GIGGLE_TYPE_VIEW)
-
-#define GET_PRIV(obj) (G_TYPE_INSTANCE_GET_PRIVATE ((obj), GIGGLE_TYPE_VIEW_STASH, GiggleViewCommitPriv))
+						 GParamSpec        *arg,
+						 GiggleViewStash *view);
+static void
+view_stash_save (GtkButton *button, void *data);
 
 static void
-giggle_view_stash_class_init (GiggleViewCommitClass *class)
+view_stash_save_job_callback (GiggleGit *git,
+			      GiggleJob *job,
+			      GError    *error,
+			      gpointer   user_data);
+
+G_DEFINE_TYPE (GiggleViewStash, giggle_view_stash, GIGGLE_TYPE_VIEW)
+
+#define GET_PRIV(obj) (G_TYPE_INSTANCE_GET_PRIVATE ((obj), GIGGLE_TYPE_VIEW_STASH, GiggleViewStashPriv))
+
+static void
+giggle_view_stash_class_init (GiggleViewStashClass *class)
 {
 	GObjectClass *object_class = G_OBJECT_CLASS (class);
 
 	object_class->finalize = view_stash_finalize;
 
-	g_type_class_add_private (object_class, sizeof (GiggleViewCommitPriv));
+	g_type_class_add_private (object_class, sizeof (GiggleViewStashPriv));
 }
 
 static void
-view_stash_update_data (GiggleViewCommit *view)
+view_stash_update_data (GiggleViewStash *view)
 {
-	GiggleViewCommitPriv *priv;
+	GiggleViewStashPriv *priv;
 
 	priv = GET_PRIV (view);
 
 }
 
 static void
-giggle_view_stash_init (GiggleViewCommit *view)
+giggle_view_stash_init (GiggleViewStash *view)
 {
-	GiggleViewCommitPriv *priv;
-	GladeXML               *xml;
+	GiggleViewStashPriv *priv;
+	GladeXML            *xml;
 
 	priv = GET_PRIV (view);
 
@@ -74,6 +88,12 @@ giggle_view_stash_init (GiggleViewCommit *view)
 	gtk_box_pack_start_defaults (GTK_BOX (view),
 				     glade_xml_get_widget (xml, "stash_vbox"));
 
+	/* git stash save */
+	priv->save_button = glade_xml_get_widget (xml, "save_button");
+	priv->save_entry = glade_xml_get_widget (xml, "save_log");
+	
+	g_signal_connect(G_OBJECT(priv->save_button), "clicked", G_CALLBACK(view_stash_save), view);
+	
 	g_object_unref (xml);
 
 	priv->git = giggle_git_get ();
@@ -87,7 +107,7 @@ giggle_view_stash_init (GiggleViewCommit *view)
 static void
 view_stash_finalize (GObject *object)
 {
-	GiggleViewCommitPriv *priv;
+	GiggleViewStashPriv *priv;
 
 	priv = GET_PRIV (object);
 }
@@ -95,9 +115,66 @@ view_stash_finalize (GObject *object)
 static void
 view_stash_project_changed_cb (GObject           *object,
 				 GParamSpec        *arg,
-				 GiggleViewCommit *view)
+				 GiggleViewStash *view)
 {
 	view_stash_update_data (view);
+}
+
+static void
+view_stash_save (GtkButton *button,
+                 void      *data)
+{
+	GiggleViewStash     *view = GIGGLE_VIEW_STASH(data);
+	GiggleViewStashPriv *priv;
+	const gchar         *log;
+
+	priv = GET_PRIV (view);
+
+	if (priv->save_job) {
+		giggle_git_cancel_job (priv->git, priv->save_job);
+		g_object_unref (priv->save_job);
+		priv->save_job = NULL;
+	}
+
+	log = gtk_entry_get_text (GTK_ENTRY(priv->save_entry));
+
+	priv->save_job = giggle_git_stash_save_new (log);
+
+	giggle_git_run_job (priv->git,
+			    priv->save_job,
+			    view_stash_save_job_callback,
+			    view);
+}
+
+static void
+view_stash_save_job_callback (GiggleGit *git,
+			      GiggleJob *job,
+			      GError    *error,
+			      gpointer   user_data)
+{
+	GiggleViewStashPriv *priv;
+
+	priv = GET_PRIV (user_data);
+
+	if (error) {
+		GtkWidget *dialog;
+
+		dialog = gtk_message_dialog_new (NULL,
+						 GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
+						 GTK_MESSAGE_ERROR,
+						 GTK_BUTTONS_CLOSE,
+						 _("An error ocurred when stashing:\n%s"),
+						 error->message);
+
+		gtk_dialog_run (GTK_DIALOG (dialog));
+		gtk_widget_destroy (dialog);
+	} else {
+		/* Tell GiggleGit listeners to update */
+		giggle_git_changed (priv->git);
+	}
+
+	g_object_unref (priv->save_job);
+	priv->save_job = NULL;
 }
 
 GtkWidget *
