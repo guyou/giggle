@@ -90,6 +90,8 @@ libgiggle_git_la_SOURCES = \
 	giggle-git-revisions.h \
 	giggle-git-stash-clear.c \
 	giggle-git-stash-clear.h \
+	giggle-git-stash-list.c \
+	giggle-git-stash-list.h \
 	giggle-git-stash-save.c \
 	giggle-git-stash-save.h \
 	giggle-git-write-config.c \

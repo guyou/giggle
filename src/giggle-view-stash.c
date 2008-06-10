@@ -24,6 +24,7 @@
 #include <glade/glade.h>
 
 #include "libgiggle/giggle-git.h"
+#include "libgiggle/giggle-git-stash-list.h"
 #include "libgiggle/giggle-git-stash-save.h"
 #include "libgiggle/giggle-git-stash-clear.h"
 #include "giggle-view-stash.h"
@@ -32,6 +33,10 @@ typedef struct GiggleViewStashPriv GiggleViewStashPriv;
 
 struct GiggleViewStashPriv {
 	GiggleGit *git;
+	
+	/* git stash list related */
+	GiggleJob *list_job;
+	GtkWidget *states_list;
 	
 	/* git stash save related */
 	GiggleJob *save_job;
@@ -75,6 +80,15 @@ view_stash_clear_job_callback (GiggleGit *git,
 			      GError    *error,
 			      gpointer   user_data);
 
+static void
+view_stash_list (GiggleViewStash     *view);
+
+static void
+view_stash_list_job_callback (GiggleGit *git,
+			      GiggleJob *job,
+			      GError    *error,
+			      gpointer   user_data);
+
 G_DEFINE_TYPE (GiggleViewStash, giggle_view_stash, GIGGLE_TYPE_VIEW)
 
 #define GET_PRIV(obj) (G_TYPE_INSTANCE_GET_PRIVATE ((obj), GIGGLE_TYPE_VIEW_STASH, GiggleViewStashPriv))
@@ -96,12 +110,16 @@ view_stash_update_data (GiggleViewStash *view)
 
 	priv = GET_PRIV (view);
 
+	g_debug(__FUNCTION__);
+	
 	/* not yet implemented */
 	gtk_widget_set_sensitive(priv->apply_button, FALSE);
 	/* not yet implemented */
 	gtk_widget_set_sensitive(priv->pop_button, FALSE);
 	/* not yet implemented */
 	gtk_widget_set_sensitive(priv->drop_button, FALSE);
+	
+	view_stash_list(view);
 }
 
 static void
@@ -110,6 +128,9 @@ giggle_view_stash_init (GiggleViewStash *view)
 	GiggleViewStashPriv *priv;
 	GladeXML            *xml;
 
+        GtkTreeViewColumn   *column;
+        GtkCellRenderer     *cell_renderer;
+	
 	priv = GET_PRIV (view);
 
 	xml = glade_xml_new (GLADEDIR "/main-window.glade", "stash_vbox", NULL);
@@ -117,6 +138,18 @@ giggle_view_stash_init (GiggleViewStash *view)
 	gtk_box_pack_start_defaults (GTK_BOX (view),
 				     glade_xml_get_widget (xml, "stash_vbox"));
 
+	/* git stash list */
+	priv->states_list = glade_xml_get_widget (xml, "states_list");
+	/* Creation de la premiere colonne */
+        cell_renderer = gtk_cell_renderer_text_new();
+        column = gtk_tree_view_column_new_with_attributes("Titre",
+                                                           cell_renderer,
+        "text", 0,
+        NULL);
+
+        /* Ajout de la colonne à la vue */
+        gtk_tree_view_append_column(GTK_TREE_VIEW(priv->states_list), column);
+	
 	/* git stash save */
 	priv->save_button = glade_xml_get_widget (xml, "save_button");
 	priv->save_entry = glade_xml_get_widget (xml, "save_log");
@@ -288,6 +321,73 @@ view_stash_clear_job_callback (GiggleGit *git,
 
 	g_object_unref (priv->clear_job);
 	priv->clear_job = NULL;
+}
+
+static void
+view_stash_list (GiggleViewStash     *view)
+{
+	GiggleViewStashPriv *priv;
+
+	priv = GET_PRIV (view);
+
+	if (priv->list_job) {
+		giggle_git_cancel_job (priv->git, priv->list_job);
+		g_object_unref (priv->list_job);
+		priv->save_job = NULL;
+	}
+
+	priv->list_job = giggle_git_stash_list_new ();
+
+	giggle_git_run_job (priv->git,
+			    priv->list_job,
+			    view_stash_list_job_callback,
+			    view);
+}
+
+static void
+view_stash_list_job_callback (GiggleGit *git,
+			      GiggleJob *job,
+			      GError    *error,
+			      gpointer   user_data)
+{
+	GiggleViewStashPriv *priv;
+	GiggleViewStash     *view;
+	
+	view = GIGGLE_VIEW_STASH (user_data);
+	priv = GET_PRIV (view);
+
+	if (error) {
+		GtkWidget *dialog;
+
+		dialog = gtk_message_dialog_new (NULL,
+						 GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
+						 GTK_MESSAGE_ERROR,
+						 GTK_BUTTONS_CLOSE,
+						 _("An error ocurred when stash clearing:\n%s"),
+						 error->message);
+
+		gtk_dialog_run (GTK_DIALOG (dialog));
+		gtk_widget_destroy (dialog);
+	} else {
+		/* Insert elem */
+		GtkListStore *list_store;
+		GtkTreeIter   iter;
+                GSList *entry;
+
+		list_store = gtk_list_store_new (1, G_TYPE_STRING);
+		gtk_tree_view_set_model (GTK_TREE_VIEW(priv->states_list), GTK_TREE_MODEL(list_store));
+
+		entry = giggle_git_stash_list_get_states (GIGGLE_GIT_STASH_LIST(priv->list_job));
+                for (; entry != NULL; entry = g_slist_next(entry)) {
+        		gchar *state = entry->data;
+
+			gtk_list_store_append (list_store, &iter);
+			gtk_list_store_set (list_store, &iter, 0, state, -1);
+		}
+	}
+
+	g_object_unref (priv->list_job);
+	priv->list_job = NULL;
 }
 
 GtkWidget *
