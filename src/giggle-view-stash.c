@@ -142,10 +142,9 @@ giggle_view_stash_init (GiggleViewStash *view)
 	priv->states_list = glade_xml_get_widget (xml, "states_list");
 	/* Creation de la premiere colonne */
         cell_renderer = gtk_cell_renderer_text_new();
-        column = gtk_tree_view_column_new_with_attributes("Titre",
-                                                           cell_renderer,
-        "text", 0,
-        NULL);
+        column = gtk_tree_view_column_new_with_attributes(_("States"), cell_renderer,
+							  "text", 0,
+							  NULL);
 
         /* Ajout de la colonne à la vue */
         gtk_tree_view_append_column(GTK_TREE_VIEW(priv->states_list), column);
