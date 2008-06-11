@@ -89,6 +89,9 @@ view_stash_list_job_callback (GiggleGit *git,
 			      GError    *error,
 			      gpointer   user_data);
 
+static void
+view_stash_list_selection_changed (GtkWidget *widget, gpointer label);
+
 G_DEFINE_TYPE (GiggleViewStash, giggle_view_stash, GIGGLE_TYPE_VIEW)
 
 #define GET_PRIV(obj) (G_TYPE_INSTANCE_GET_PRIVATE ((obj), GIGGLE_TYPE_VIEW_STASH, GiggleViewStashPriv))
@@ -112,13 +115,6 @@ view_stash_update_data (GiggleViewStash *view)
 
 	g_debug(__FUNCTION__);
 	
-	/* not yet implemented */
-	gtk_widget_set_sensitive(priv->apply_button, FALSE);
-	/* not yet implemented */
-	gtk_widget_set_sensitive(priv->pop_button, FALSE);
-	/* not yet implemented */
-	gtk_widget_set_sensitive(priv->drop_button, FALSE);
-	
 	view_stash_list(view);
 }
 
@@ -130,6 +126,7 @@ giggle_view_stash_init (GiggleViewStash *view)
 
         GtkTreeViewColumn   *column;
         GtkCellRenderer     *cell_renderer;
+	GtkTreeSelection    *selection;
 	
 	priv = GET_PRIV (view);
 
@@ -148,6 +145,9 @@ giggle_view_stash_init (GiggleViewStash *view)
 
         /* Ajout de la colonne à la vue */
         gtk_tree_view_append_column(GTK_TREE_VIEW(priv->states_list), column);
+	
+	selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(priv->states_list));
+	g_signal_connect(selection, "changed", G_CALLBACK(view_stash_list_selection_changed), view);
 	
 	/* git stash save */
 	priv->save_button = glade_xml_get_widget (xml, "save_button");
@@ -387,6 +387,29 @@ view_stash_list_job_callback (GiggleGit *git,
 
 	g_object_unref (priv->list_job);
 	priv->list_job = NULL;
+}
+
+void
+view_stash_list_selection_changed (GtkWidget *widget, gpointer data)
+{
+	GtkTreeIter   iter;
+	GtkTreeModel *model;
+	gboolean      sensitivity;
+	GiggleViewStashPriv *priv;
+
+	g_debug(__FUNCTION__);
+	
+	priv = GET_PRIV (data);
+
+	if (gtk_tree_selection_get_selected(GTK_TREE_SELECTION(widget), &model, &iter)) {
+		sensitivity = TRUE;
+	} else {
+		sensitivity = FALSE;
+	}
+
+	gtk_widget_set_sensitive(priv->apply_button, sensitivity);
+	gtk_widget_set_sensitive(priv->pop_button, sensitivity);
+	gtk_widget_set_sensitive(priv->drop_button, sensitivity);
 }
 
 GtkWidget *
