@@ -65,6 +65,7 @@ giggle_git_stash_subcommand_class_init (GiggleGitStashSubcommandClass *class)
 	object_class->set_property = git_stash_subcommand_set_property;
 
 	job_class->get_command_line = git_stash_subcommand_get_command_line;
+	job_class->handle_output = NULL;
 
 	g_object_class_install_property (object_class,
 					 PROP_SUBCOMMAND,
