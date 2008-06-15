@@ -27,7 +27,7 @@ typedef struct GiggleGitStashSubcommandPriv GiggleGitStashSubcommandPriv;
 
 struct GiggleGitStashSubcommandPriv {
 	gchar *subcommand;
-	guint  id;
+	gchar *stash;
 };
 
 static void     git_stash_subcommand_finalize            (GObject           *object);
@@ -76,8 +76,8 @@ giggle_git_stash_subcommand_class_init (GiggleGitStashSubcommandClass *class)
 
 	g_object_class_install_property (object_class,
 					 PROP_ID,
-					 g_param_spec_string ("id",
-							      "Id",
+					 g_param_spec_string ("stash",
+							      "Stash",
 							      "Id of the stash",
 							      NULL,
 							      G_PARAM_READWRITE));
@@ -98,6 +98,7 @@ git_stash_subcommand_finalize (GObject *object)
 	priv = GET_PRIV (object);
 
 	g_free (priv->subcommand);
+	g_free (priv->stash);
 
 	G_OBJECT_CLASS (giggle_git_stash_subcommand_parent_class)->finalize (object);
 }
@@ -117,7 +118,7 @@ git_stash_subcommand_get_property (GObject    *object,
 		g_value_set_string (value, priv->subcommand);
 		break;
 	case PROP_ID:
-		g_value_set_uint (value, priv->id);
+		g_value_set_string (value, priv->stash);
 		break;
 	default:
 		G_OBJECT_WARN_INVALID_PROPERTY_ID (object, param_id, pspec);
@@ -140,7 +141,7 @@ git_stash_subcommand_set_property (GObject      *object,
 		priv->subcommand = g_value_dup_string (value);
 		break;
 	case PROP_ID:
-		priv->id = g_value_get_uint (value);
+		priv->stash = g_value_dup_string (value);
 		break;
 	default:
 		G_OBJECT_WARN_INVALID_PROPERTY_ID (object, param_id, pspec);
@@ -152,26 +153,23 @@ static gboolean
 git_stash_subcommand_get_command_line (GiggleJob *job, gchar **command_line)
 {
 	GiggleGitStashSubcommandPriv *priv;
-	GString                      *str;
 
 	priv = GET_PRIV (job);
-
-	g_return_val_if_fail (!priv->subcommand, FALSE);
+	g_debug("%s: %p->%p", __FUNCTION__, priv, priv->subcommand);
+	g_debug("%s: %s", __FUNCTION__, priv->subcommand);
+//	g_return_val_if_fail (priv->subcommand != NULL, FALSE);
 	
-	str = g_string_new (GIT_COMMAND " stash ");
-	str = g_string_append (str, priv->subcommand);
-
-	*command_line = g_strdup_printf ("%s stash@{%d}", str->str, priv->id);
+	*command_line = g_strdup_printf ("/bin/echo " GIT_COMMAND " stash %s", priv->stash);
+	g_debug("%s: %s", __FUNCTION__, *command_line);
 	
-	g_string_free (str, TRUE);
 	return TRUE;
 }
 
 GiggleJob *
-giggle_git_stash_subcommand_new (const gchar *subcommand, guint id)
+giggle_git_stash_subcommand_new (const gchar *subcommand, const gchar *stash)
 {
 	return g_object_new (GIGGLE_TYPE_GIT_STASH_SUBCOMMAND,
 			     "subcommand", subcommand,
-			     "id", id,
+			     "stash", stash,
 			     NULL);
 }

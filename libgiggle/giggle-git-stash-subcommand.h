@@ -48,7 +48,7 @@ struct GiggleGitStashSubcommandClass {
 
 GType		      giggle_git_stash_subcommand_get_type   (void);
 
-GiggleJob *       giggle_git_stash_subcommand_new        (const gchar *subcommand, guint id);
+GiggleJob *       giggle_git_stash_subcommand_new        (const gchar *subcommand, const gchar *id);
 
 G_END_DECLS
 
