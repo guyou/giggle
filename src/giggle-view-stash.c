@@ -26,6 +26,7 @@
 #include "libgiggle/giggle-git.h"
 #include "libgiggle/giggle-git-stash-list.h"
 #include "libgiggle/giggle-git-stash-save.h"
+#include "libgiggle/giggle-git-stash-subcommand.h"
 #include "libgiggle/giggle-git-stash-clear.h"
 #include "giggle-view-stash.h"
 
@@ -55,6 +56,14 @@ struct GiggleViewStashPriv {
 
 	/* git stash drop related */
 	GtkWidget *drop_button;
+	
+	/* git stash subcommands */
+	GiggleJob *subcommand_job;
+};
+
+enum {
+	COL_ID,
+	COL_STASH
 };
 
 static void    view_stash_finalize              (GObject           *object);
@@ -91,6 +100,15 @@ view_stash_list_job_callback (GiggleGit *git,
 
 static void
 view_stash_list_selection_changed (GtkWidget *widget, gpointer label);
+
+static void
+view_stash_subcommand (GtkButton *button, void *data);
+
+static void
+view_stash_subcommand_job_callback (GiggleGit *git,
+			            GiggleJob *job,
+			            GError    *error,
+			            gpointer   user_data);
 
 G_DEFINE_TYPE (GiggleViewStash, giggle_view_stash, GIGGLE_TYPE_VIEW)
 
@@ -139,14 +157,19 @@ giggle_view_stash_init (GiggleViewStash *view)
 	priv->states_list = glade_xml_get_widget (xml, "states_list");
 	/* Creation de la premiere colonne */
         cell_renderer = gtk_cell_renderer_text_new();
-        column = gtk_tree_view_column_new_with_attributes(_("States"), cell_renderer,
-							  "text", 0,
+        column = gtk_tree_view_column_new_with_attributes(_("Id"), cell_renderer,
+							  "text", COL_ID,
 							  NULL);
-
-        /* Ajout de la colonne à la vue */
         gtk_tree_view_append_column(GTK_TREE_VIEW(priv->states_list), column);
 	
+        cell_renderer = gtk_cell_renderer_text_new();
+        column = gtk_tree_view_column_new_with_attributes(_("States"), cell_renderer,
+							  "text", COL_STASH,
+							  NULL);
+        gtk_tree_view_append_column(GTK_TREE_VIEW(priv->states_list), column);
+
 	selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(priv->states_list));
+	gtk_tree_selection_set_mode (selection, GTK_SELECTION_SINGLE);
 	g_signal_connect(selection, "changed", G_CALLBACK(view_stash_list_selection_changed), view);
 	
 	/* git stash save */
@@ -157,17 +180,19 @@ giggle_view_stash_init (GiggleViewStash *view)
 	
 	/* git stash clear */
 	priv->clear_button = glade_xml_get_widget (xml, "clear_button");
-	
 	g_signal_connect(G_OBJECT(priv->clear_button), "clicked", G_CALLBACK(view_stash_clear), view);
 	
 	/* git stash apply */
 	priv->apply_button = glade_xml_get_widget (xml, "apply_button");
+	g_signal_connect(G_OBJECT(priv->apply_button), "clicked", G_CALLBACK(view_stash_subcommand), view);
 	
 	/* git stash pop */
 	priv->pop_button = glade_xml_get_widget (xml, "pop_button");
+	g_signal_connect(G_OBJECT(priv->pop_button), "clicked", G_CALLBACK(view_stash_subcommand), view);
 	
 	/* git stash drop */
 	priv->drop_button = glade_xml_get_widget (xml, "drop_button");
+	g_signal_connect(G_OBJECT(priv->drop_button), "clicked", G_CALLBACK(view_stash_subcommand), view);
 
 	g_object_unref (xml);
 
@@ -373,15 +398,19 @@ view_stash_list_job_callback (GiggleGit *git,
 		GtkTreeIter   iter;
                 GSList *entry;
 
-		list_store = gtk_list_store_new (1, G_TYPE_STRING);
+		list_store = gtk_list_store_new (2, G_TYPE_STRING, G_TYPE_STRING);
 		gtk_tree_view_set_model (GTK_TREE_VIEW(priv->states_list), GTK_TREE_MODEL(list_store));
 
 		entry = giggle_git_stash_list_get_states (GIGGLE_GIT_STASH_LIST(priv->list_job));
                 for (; entry != NULL; entry = g_slist_next(entry)) {
-        		gchar *state = entry->data;
-
+			gchar **tokens = g_strsplit(entry->data, ": ", 2);
+			g_debug("%s: %s, %s", __FUNCTION__, tokens[0], tokens[1]);
 			gtk_list_store_append (list_store, &iter);
-			gtk_list_store_set (list_store, &iter, 0, state, -1);
+			gtk_list_store_set (list_store, &iter,
+					    COL_ID, tokens[0],
+					    COL_STASH, tokens[1],
+					    -1);
+			g_strfreev(tokens);
 		}
 	}
 
@@ -410,6 +439,94 @@ view_stash_list_selection_changed (GtkWidget *widget, gpointer data)
 	gtk_widget_set_sensitive(priv->apply_button, sensitivity);
 	gtk_widget_set_sensitive(priv->pop_button, sensitivity);
 	gtk_widget_set_sensitive(priv->drop_button, sensitivity);
+}
+
+static gchar *
+view_stash_list_selection_id (GiggleViewStash *view)
+{
+	GtkTreeIter   iter;
+	GtkTreeModel *model;
+	GiggleViewStashPriv *priv;
+	GtkTreeSelection    *selection;
+	gchar               *id = NULL;
+
+	priv = GET_PRIV (view);
+
+	selection = gtk_tree_view_get_selection (GTK_TREE_VIEW(priv->states_list));
+	if (gtk_tree_selection_get_selected(selection, &model, &iter)) {
+		/*
+		gchar **tokens = g_strsplit(, ": ", 2);
+		id = g_strdup(tokens[0]);
+		g_strfreev(tokens);
+		 */
+		gtk_tree_model_get (model, &iter, COL_ID, &id, -1); 
+	}
+	
+	return id;
+}
+
+static void
+view_stash_subcommand (GtkButton *button,
+                       void      *data)
+{
+	GiggleViewStash     *view = GIGGLE_VIEW_STASH(data);
+	GiggleViewStashPriv *priv;
+	gchar               *id;
+
+	priv = GET_PRIV (view);
+
+	if (priv->subcommand_job) {
+		giggle_git_cancel_job (priv->git, priv->subcommand_job);
+		g_object_unref (priv->subcommand_job);
+		priv->subcommand_job = NULL;
+	}
+	
+	id = view_stash_list_selection_id (view);
+
+	if (button == GTK_BUTTON(priv->apply_button))
+		priv->subcommand_job = giggle_git_stash_subcommand_new ("apply", id);
+	if (button == GTK_BUTTON(priv->drop_button))
+		priv->subcommand_job = giggle_git_stash_subcommand_new ("drop", id);
+	if (button == GTK_BUTTON(priv->pop_button))
+		priv->subcommand_job = giggle_git_stash_subcommand_new ("pop", id);
+
+	giggle_git_run_job (priv->git,
+			    priv->subcommand_job,
+			    view_stash_subcommand_job_callback,
+			    view);
+}
+
+static void
+view_stash_subcommand_job_callback (GiggleGit *git,
+			            GiggleJob *job,
+			            GError    *error,
+			            gpointer   user_data)
+{
+	GiggleViewStashPriv *priv;
+
+	g_debug(__FUNCTION__);
+
+	priv = GET_PRIV (user_data);
+
+	if (error) {
+		GtkWidget *dialog;
+
+		dialog = gtk_message_dialog_new (NULL,
+						 GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
+						 GTK_MESSAGE_ERROR,
+						 GTK_BUTTONS_CLOSE,
+						 _("An error ocurred when stash saving:\n%s"),
+						 error->message);
+
+		gtk_dialog_run (GTK_DIALOG (dialog));
+		gtk_widget_destroy (dialog);
+	} else {
+		/* Tell GiggleGit listeners to update */
+		giggle_git_changed (priv->git);
+	}
+
+	g_object_unref (priv->subcommand_job);
+	priv->subcommand_job = NULL;
 }
 
 GtkWidget *
