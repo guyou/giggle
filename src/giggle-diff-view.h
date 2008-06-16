@@ -63,6 +63,9 @@ gboolean           giggle_diff_view_get_compact_mode  (GiggleDiffView *view);
 void               giggle_diff_view_set_compact_mode  (GiggleDiffView *view,
 						       gboolean        compact_mode);
 
+void               giggle_diff_view_set_diff  (GiggleDiffView *view,
+						       const gchar *text);
+
 G_END_DECLS
 
 #endif /* __GIGGLE_DIFF_VIEW_H__ */

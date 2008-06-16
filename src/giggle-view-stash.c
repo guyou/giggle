@@ -26,8 +26,10 @@
 #include "libgiggle/giggle-git.h"
 #include "libgiggle/giggle-git-stash-list.h"
 #include "libgiggle/giggle-git-stash-save.h"
+#include "libgiggle/giggle-git-stash-show.h"
 #include "libgiggle/giggle-git-stash-subcommand.h"
 #include "libgiggle/giggle-git-stash-clear.h"
+#include "giggle-diff-view.h"
 #include "giggle-view-stash.h"
 
 typedef struct GiggleViewStashPriv GiggleViewStashPriv;
@@ -59,6 +61,9 @@ struct GiggleViewStashPriv {
 	
 	/* git stash subcommands */
 	GiggleJob *subcommand_job;
+	
+	/* Displaying stash */
+	GtkWidget *diff_view;
 };
 
 enum {
@@ -110,6 +115,16 @@ view_stash_subcommand_job_callback (GiggleGit *git,
 			            GError    *error,
 			            gpointer   user_data);
 
+static void
+view_stash_display (GiggleViewStash *view,
+		    gchar           *id);
+
+static void
+view_stash_display_job_callback (GiggleGit *git,
+			            GiggleJob *job,
+			            GError    *error,
+			            gpointer   user_data);
+
 G_DEFINE_TYPE (GiggleViewStash, giggle_view_stash, GIGGLE_TYPE_VIEW)
 
 #define GET_PRIV(obj) (G_TYPE_INSTANCE_GET_PRIVATE ((obj), GIGGLE_TYPE_VIEW_STASH, GiggleViewStashPriv))
@@ -146,6 +161,8 @@ giggle_view_stash_init (GiggleViewStash *view)
         GtkCellRenderer     *cell_renderer;
 	GtkTreeSelection    *selection;
 	
+	GtkWidget           *scrolled_window;
+		
 	priv = GET_PRIV (view);
 
 	xml = glade_xml_new (GLADEDIR "/main-window.glade", "stash_vbox", NULL);
@@ -193,6 +210,13 @@ giggle_view_stash_init (GiggleViewStash *view)
 	/* git stash drop */
 	priv->drop_button = glade_xml_get_widget (xml, "drop_button");
 	g_signal_connect(G_OBJECT(priv->drop_button), "clicked", G_CALLBACK(view_stash_subcommand), view);
+
+	/* diff view */
+	priv->diff_view = giggle_diff_view_new ();
+	scrolled_window = glade_xml_get_widget (xml, "stash_diff_sw");
+	
+	gtk_container_add (GTK_CONTAINER (scrolled_window), priv->diff_view);
+	gtk_widget_show_all (scrolled_window);
 
 	g_object_unref (xml);
 
@@ -424,6 +448,7 @@ view_stash_list_selection_changed (GtkWidget *widget, gpointer data)
 	GtkTreeIter   iter;
 	GtkTreeModel *model;
 	gboolean      sensitivity;
+	GiggleViewStash     *view = GIGGLE_VIEW_STASH(data);
 	GiggleViewStashPriv *priv;
 
 	g_debug(__FUNCTION__);
@@ -431,11 +456,17 @@ view_stash_list_selection_changed (GtkWidget *widget, gpointer data)
 	priv = GET_PRIV (data);
 
 	if (gtk_tree_selection_get_selected(GTK_TREE_SELECTION(widget), &model, &iter)) {
+		gchar *id = NULL;
+
 		sensitivity = TRUE;
+		
+		gtk_tree_model_get (model, &iter, COL_ID, &id, -1); 
+		view_stash_display (view, id);
 	} else {
 		sensitivity = FALSE;
 	}
 
+	/* Update buttons */
 	gtk_widget_set_sensitive(priv->apply_button, sensitivity);
 	gtk_widget_set_sensitive(priv->pop_button, sensitivity);
 	gtk_widget_set_sensitive(priv->drop_button, sensitivity);
@@ -529,8 +560,67 @@ view_stash_subcommand_job_callback (GiggleGit *git,
 	priv->subcommand_job = NULL;
 }
 
+static void
+view_stash_display (GiggleViewStash *view,
+		    gchar           *id)
+{
+	GiggleViewStashPriv *priv;
+
+	priv = GET_PRIV (view);
+
+	if (priv->subcommand_job) {
+		giggle_git_cancel_job (priv->git, priv->subcommand_job);
+		g_object_unref (priv->subcommand_job);
+		priv->subcommand_job = NULL;
+	}
+
+	priv->subcommand_job = giggle_git_stash_show_new (id);
+
+	giggle_git_run_job (priv->git,
+			    priv->subcommand_job,
+			    view_stash_display_job_callback,
+			    view);
+}
+
+static void
+view_stash_display_job_callback (GiggleGit *git,
+			            GiggleJob *job,
+			            GError    *error,
+			            gpointer   user_data)
+{
+	GiggleViewStash     *view = GIGGLE_VIEW_STASH(user_data);
+	GiggleViewStashPriv *priv;
+
+	g_debug(__FUNCTION__);
+
+	priv = GET_PRIV (view);
+
+	if (error) {
+		GtkWidget *dialog;
+
+		dialog = gtk_message_dialog_new (NULL,
+						 GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
+						 GTK_MESSAGE_ERROR,
+						 GTK_BUTTONS_CLOSE,
+						 _("An error ocurred when stash saving:\n%s"),
+						 error->message);
+
+		gtk_dialog_run (GTK_DIALOG (dialog));
+		gtk_widget_destroy (dialog);
+	} else {
+		g_debug("%s: %s", __FUNCTION__,
+			giggle_git_stash_show_get_result (GIGGLE_GIT_STASH_SHOW(priv->subcommand_job)));
+		giggle_diff_view_set_diff (GIGGLE_DIFF_VIEW(priv->diff_view),
+			giggle_git_stash_show_get_result (GIGGLE_GIT_STASH_SHOW(priv->subcommand_job)));
+	}
+
+	g_object_unref (priv->subcommand_job);
+	priv->subcommand_job = NULL;
+}
+
 GtkWidget *
 giggle_view_stash_new (void)
 {
 	return g_object_new (GIGGLE_TYPE_VIEW_STASH, NULL);
 }
+
