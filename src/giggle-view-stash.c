@@ -73,9 +73,7 @@ enum {
 
 static void    view_stash_finalize              (GObject           *object);
 
-static void    view_stash_project_changed_cb    (GObject           *object,
-						 GParamSpec        *arg,
-						 GiggleViewStash *view);
+static void    view_stash_project_changed_cb    (GiggleViewStash *view);
 static void
 view_stash_save (GtkButton *button, void *data);
 
@@ -221,7 +219,9 @@ giggle_view_stash_init (GiggleViewStash *view)
 	g_object_unref (xml);
 
 	priv->git = giggle_git_get ();
-	g_signal_connect (priv->git, "notify::directory",
+	g_signal_connect_swapped (priv->git, "notify::directory",
+			  G_CALLBACK (view_stash_project_changed_cb), view);
+	g_signal_connect_swapped (priv->git, "changed",
 			  G_CALLBACK (view_stash_project_changed_cb), view);
 
 	/* initialize for the first time */
@@ -237,10 +237,9 @@ view_stash_finalize (GObject *object)
 }
 
 static void
-view_stash_project_changed_cb (GObject           *object,
-				 GParamSpec        *arg,
-				 GiggleViewStash *view)
+view_stash_project_changed_cb (GiggleViewStash *view)
 {
+	g_return_if_fail (GIGGLE_IS_VIEW_STASH(view));
 	view_stash_update_data (view);
 }
 
