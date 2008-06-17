@@ -51,7 +51,7 @@ G_DEFINE_TYPE (GiggleGitStashSubcommand, giggle_git_stash_subcommand, GIGGLE_TYP
 enum {
 	PROP_0,
 	PROP_SUBCOMMAND,
-	PROP_ID,
+	PROP_STASH,
 };
 
 static void
@@ -76,7 +76,7 @@ giggle_git_stash_subcommand_class_init (GiggleGitStashSubcommandClass *class)
 							      G_PARAM_READWRITE));
 
 	g_object_class_install_property (object_class,
-					 PROP_ID,
+					 PROP_STASH,
 					 g_param_spec_string ("stash",
 							      "Stash",
 							      "Id of the stash",
@@ -118,7 +118,7 @@ git_stash_subcommand_get_property (GObject    *object,
 	case PROP_SUBCOMMAND:
 		g_value_set_string (value, priv->subcommand);
 		break;
-	case PROP_ID:
+	case PROP_STASH:
 		g_value_set_string (value, priv->stash);
 		break;
 	default:
@@ -141,7 +141,7 @@ git_stash_subcommand_set_property (GObject      *object,
 	case PROP_SUBCOMMAND:
 		priv->subcommand = g_value_dup_string (value);
 		break;
-	case PROP_ID:
+	case PROP_STASH:
 		priv->stash = g_value_dup_string (value);
 		break;
 	default:
