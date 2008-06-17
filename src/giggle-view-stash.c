@@ -375,7 +375,8 @@ static void
 view_stash_list (GiggleViewStash     *view)
 {
 	GiggleViewStashPriv *priv;
-
+	
+	g_return_if_fail (GIGGLE_IS_VIEW_STASH (view));
 	priv = GET_PRIV (view);
 
 	if (priv->list_job) {
@@ -438,7 +439,8 @@ view_stash_list_job_callback (GiggleGit *git,
 		}
 	}
 
-	g_object_unref (priv->list_job);
+	if (priv->list_job)
+		g_object_unref (priv->list_job);
 	priv->list_job = NULL;
 }
 
@@ -554,7 +556,8 @@ view_stash_subcommand_job_callback (GiggleGit *git,
 		giggle_git_changed (priv->git);
 	}
 
-	g_object_unref (priv->subcommand_job);
+	if (priv->subcommand_job)
+		g_object_unref (priv->subcommand_job);
 	priv->subcommand_job = NULL;
 }
 
@@ -610,7 +613,8 @@ view_stash_display_job_callback (GiggleGit *git,
 			giggle_git_stash_show_get_result (GIGGLE_GIT_STASH_SHOW(priv->subcommand_job)));
 	}
 
-	g_object_unref (priv->subcommand_job);
+	if (priv->subcommand_job)
+		g_object_unref (priv->subcommand_job);
 	priv->subcommand_job = NULL;
 }
 
