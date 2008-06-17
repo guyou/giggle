@@ -464,6 +464,9 @@ view_stash_list_selection_changed (GtkWidget *widget, gpointer data)
 		view_stash_display (view, id);
 	} else {
 		sensitivity = FALSE;
+		
+		/* clear the diff view */
+		giggle_diff_view_set_diff (GIGGLE_DIFF_VIEW(priv->diff_view), "");
 	}
 
 	/* Update buttons */
