@@ -156,9 +156,7 @@ git_stash_subcommand_get_command_line (GiggleJob *job, gchar **command_line)
 	GiggleGitStashSubcommandPriv *priv;
 
 	priv = GET_PRIV (job);
-	g_debug("%s: %p->%p", __FUNCTION__, priv, priv->subcommand);
-	g_debug("%s: %s", __FUNCTION__, priv->subcommand);
-//	g_return_val_if_fail (priv->subcommand != NULL, FALSE);
+	g_return_val_if_fail (priv->subcommand != NULL, FALSE);
 	
 	*command_line = g_strdup_printf (GIT_COMMAND " stash %s %s", priv->subcommand, priv->stash);
 	g_debug("%s: %s", __FUNCTION__, *command_line);

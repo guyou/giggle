@@ -485,11 +485,6 @@ view_stash_list_selection_id (GiggleViewStash *view)
 
 	selection = gtk_tree_view_get_selection (GTK_TREE_VIEW(priv->states_list));
 	if (gtk_tree_selection_get_selected(selection, &model, &iter)) {
-		/*
-		gchar **tokens = g_strsplit(, ": ", 2);
-		id = g_strdup(tokens[0]);
-		g_strfreev(tokens);
-		 */
 		gtk_tree_model_get (model, &iter, COL_ID, &id, -1); 
 	}
 	
@@ -608,8 +603,6 @@ view_stash_display_job_callback (GiggleGit *git,
 		gtk_dialog_run (GTK_DIALOG (dialog));
 		gtk_widget_destroy (dialog);
 	} else {
-		g_debug("%s: %s", __FUNCTION__,
-			giggle_git_stash_show_get_result (GIGGLE_GIT_STASH_SHOW(priv->subcommand_job)));
 		giggle_diff_view_set_diff (GIGGLE_DIFF_VIEW(priv->diff_view),
 			giggle_git_stash_show_get_result (GIGGLE_GIT_STASH_SHOW(priv->subcommand_job)));
 	}
