@@ -163,10 +163,10 @@ giggle_view_stash_init (GiggleViewStash *view)
 		
 	priv = GET_PRIV (view);
 
-	xml = glade_xml_new (GLADEDIR "/main-window.glade", "stash_vbox", NULL);
+	xml = glade_xml_new (GLADEDIR "/main-window.glade", "stash_vpane", NULL);
 
 	gtk_box_pack_start_defaults (GTK_BOX (view),
-				     glade_xml_get_widget (xml, "stash_vbox"));
+				     glade_xml_get_widget (xml, "stash_vpane"));
 
 	/* git stash list */
 	priv->states_list = glade_xml_get_widget (xml, "states_list");
