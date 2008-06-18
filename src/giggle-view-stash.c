@@ -114,11 +114,11 @@ view_stash_subcommand_job_callback (GiggleGit *git,
 			            gpointer   user_data);
 
 static void
-view_stash_display (GiggleViewStash *view,
+view_stash_show (GiggleViewStash *view,
 		    gchar           *id);
 
 static void
-view_stash_display_job_callback (GiggleGit *git,
+view_stash_show_job_callback (GiggleGit *git,
 			            GiggleJob *job,
 			            GError    *error,
 			            gpointer   user_data);
@@ -462,7 +462,7 @@ view_stash_list_selection_changed (GtkWidget *widget, gpointer data)
 		sensitivity = TRUE;
 		
 		gtk_tree_model_get (model, &iter, COL_ID, &id, -1); 
-		view_stash_display (view, id);
+		view_stash_show (view, id);
 	} else {
 		sensitivity = FALSE;
 		
@@ -561,7 +561,7 @@ view_stash_subcommand_job_callback (GiggleGit *git,
 }
 
 static void
-view_stash_display (GiggleViewStash *view,
+view_stash_show (GiggleViewStash *view,
 		    gchar           *id)
 {
 	GiggleViewStashPriv *priv;
@@ -578,12 +578,12 @@ view_stash_display (GiggleViewStash *view,
 
 	giggle_git_run_job (priv->git,
 			    priv->subcommand_job,
-			    view_stash_display_job_callback,
+			    view_stash_show_job_callback,
 			    view);
 }
 
 static void
-view_stash_display_job_callback (GiggleGit *git,
+view_stash_show_job_callback (GiggleGit *git,
 			            GiggleJob *job,
 			            GError    *error,
 			            gpointer   user_data)
