@@ -32,6 +32,7 @@
 #include "giggle-view-summary.h"
 #include "giggle-view-history.h"
 #include "giggle-view-file.h"
+#include "giggle-view-stash.h"
 #include "libgiggle/giggle-searchable.h"
 #include "giggle-diff-window.h"
 #include "libgiggle/giggle-configuration.h"
@@ -52,6 +53,7 @@ struct GiggleWindowPriv {
 	GtkWidget           *summary_view;
 	GtkWidget           *history_view;
 	GtkWidget           *file_view;
+	GtkWidget           *stash_view;
 
 	/* Menu & toolbar */
 	GtkUIManager        *ui_manager;
@@ -223,7 +225,7 @@ static const GtkActionEntry action_entries[] = {
 	  G_CALLBACK (window_action_history_go_forward)
 	},
 	{ "RefreshHistory", GTK_STOCK_REFRESH,
-	  N_("_Refresh"), "F5", NULL,
+	  N_("_Refresh"), "<control>R", NULL,
 	  G_CALLBACK (window_action_history_refresh)
 	},
 };
@@ -585,6 +587,14 @@ giggle_window_init (GiggleWindow *window)
 	gtk_notebook_append_page (GTK_NOTEBOOK (priv->main_notebook),
 				  priv->summary_view,
 				  gtk_label_new (_("Summary")));
+
+	/* append stash view */
+	priv->stash_view = giggle_view_stash_new ();
+	gtk_widget_show (priv->stash_view);
+
+	gtk_notebook_append_page (GTK_NOTEBOOK (priv->main_notebook),
+				  priv->stash_view,
+				  gtk_label_new (_("Stash")));
 
 	giggle_configuration_update (priv->configuration, on_configuration_updated, window);
 }

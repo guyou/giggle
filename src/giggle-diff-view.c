@@ -236,6 +236,14 @@ diff_view_do_search (GiggleDiffView *view,
 	return match;
 }
 
+void
+giggle_diff_view_set_diff (GiggleDiffView *view,
+		    const gchar    *text)
+{
+	gtk_text_buffer_set_text (gtk_text_view_get_buffer (GTK_TEXT_VIEW (view)),
+		text, -1);
+}
+
 static void
 diff_view_job_callback (GiggleGit *git,
 			GiggleJob *job,
@@ -261,10 +269,8 @@ diff_view_job_callback (GiggleGit *git,
 		gtk_dialog_run (GTK_DIALOG (dialog));
 		gtk_widget_destroy (dialog);
 	} else {
-		gtk_text_buffer_set_text (
-			gtk_text_view_get_buffer (GTK_TEXT_VIEW (view)),
-			giggle_git_diff_get_result (GIGGLE_GIT_DIFF (job)),
-			-1);
+		giggle_diff_view_set_diff (view,
+			giggle_git_diff_get_result (GIGGLE_GIT_DIFF (job)));
 
 		if (priv->search_term) {
 			diff_view_do_search (view, priv->search_term);

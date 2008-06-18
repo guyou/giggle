@@ -64,7 +64,7 @@ main (int argc, char **argv)
 	}
    
 	if (version) {
-		g_printf ("%s %s, Copyright (C) 2007 Imendio AB\n", PACKAGE_NAME, PACKAGE_VERSION);
+		g_printf ("%s %s, Copyright (C) 2007-2008 Imendio AB\n", PACKAGE_NAME, PACKAGE_VERSION);
 		return EXIT_SUCCESS;
 	}
 

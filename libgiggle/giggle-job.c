@@ -55,6 +55,9 @@ giggle_job_class_init (GiggleJobClass *class)
 	object_class->finalize = job_finalize;
 	object_class->get_property = job_get_property;
 	object_class->set_property = job_set_property;
+	
+	class->get_command_line = NULL;
+	class->handle_output = NULL;
 
 	g_object_class_install_property (object_class,
 					 PROP_ID,
