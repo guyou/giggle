@@ -28,16 +28,29 @@
 
 static gboolean diff_window = FALSE;
 static gboolean version = FALSE;
+static gboolean debug = FALSE;
 
 static GOptionEntry options[] = {
 	{ "diff", 'd',
 	  0, G_OPTION_ARG_NONE, &diff_window,
 	  N_("Show the diff window"),
 	  NULL },
+	{ "debug", '\0',
+	  0, G_OPTION_ARG_NONE, &debug,
+	  N_("Enable debug output"), NULL },
 	{ "version", 'v',
 	  0, G_OPTION_ARG_NONE, &version, N_("Show version"), NULL },
 	{ NULL }
 };
+
+/* Callback to mute log message */
+static void mute_log(const gchar *log_domain,
+                     GLogLevelFlags log_level,
+                     const gchar *message,
+                     gpointer user_data)
+{
+  /* Nothing to do, we just want to mute */
+}
 
 int
 main (int argc, char **argv)
@@ -67,7 +80,10 @@ main (int argc, char **argv)
 		g_printf ("%s %s, Copyright (C) 2007-2008 Imendio AB\n", PACKAGE_NAME, PACKAGE_VERSION);
 		return EXIT_SUCCESS;
 	}
-
+	
+	if (!debug)
+		g_log_set_handler (NULL, G_LOG_LEVEL_DEBUG, mute_log, NULL);
+	
 	g_set_application_name ("Giggle");
 	gtk_window_set_default_icon_name (PACKAGE);
 
