@@ -64,7 +64,7 @@ main (int argc, char **argv)
         bind_textdomain_codeset (GETTEXT_PACKAGE, "UTF-8");
 	textdomain (GETTEXT_PACKAGE);
 
-	context = g_option_context_new (NULL);
+	context = g_option_context_new (_("- a graphical frontend for the git directory tracker"));
 	g_option_context_add_main_entries (context, options, GETTEXT_PACKAGE);
 
 	if (!gtk_init_with_args (&argc, &argv,
@@ -72,8 +72,11 @@ main (int argc, char **argv)
 				 options,
 				 GETTEXT_PACKAGE,
 				 &error)) {
+		gchar *help = g_option_context_get_help (context, FALSE, NULL);
 		g_printerr ("%s\n", error->message);
-		return 1;
+		g_printerr (help);
+		g_free (help); help = NULL;
+		return EXIT_FAILURE;
 	}
    
 	if (version) {
