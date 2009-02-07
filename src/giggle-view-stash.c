@@ -26,7 +26,6 @@
 #include "libgiggle/giggle-git.h"
 #include "libgiggle/giggle-git-stash-list.h"
 #include "libgiggle/giggle-git-stash-save.h"
-#include "libgiggle/giggle-git-stash-show.h"
 #include "libgiggle/giggle-git-stash-subcommand.h"
 #include "libgiggle/giggle-git-stash-clear.h"
 #include "giggle-diff-view.h"
@@ -68,7 +67,8 @@ struct GiggleViewStashPriv {
 
 enum {
 	COL_ID,
-	COL_STASH
+	COL_STASH,
+	COL_SHA1
 };
 
 static void    view_stash_finalize              (GObject           *object);
@@ -109,16 +109,6 @@ view_stash_subcommand (GtkButton *button, void *data);
 
 static void
 view_stash_subcommand_job_callback (GiggleGit *git,
-			            GiggleJob *job,
-			            GError    *error,
-			            gpointer   user_data);
-
-static void
-view_stash_show (GiggleViewStash *view,
-		    gchar           *id);
-
-static void
-view_stash_show_job_callback (GiggleGit *git,
 			            GiggleJob *job,
 			            GError    *error,
 			            gpointer   user_data);
@@ -427,14 +417,33 @@ view_stash_list_job_callback (GiggleGit *git,
 
 		entry = giggle_git_stash_list_get_states (GIGGLE_GIT_STASH_LIST(priv->list_job));
                 for (; entry != NULL; entry = g_slist_next(entry)) {
-			gchar **tokens = g_strsplit(entry->data, ": ", 2);
-			g_debug("%s: %s, %s", __FUNCTION__, tokens[0], tokens[1]);
-			gtk_list_store_append (list_store, &iter);
-			gtk_list_store_set (list_store, &iter,
-					    COL_ID, tokens[0],
-					    COL_STASH, tokens[1],
-					    -1);
-			g_strfreev(tokens);
+			GError *error = NULL;
+			GMatchInfo *matches = NULL;
+			static GRegex *regex = NULL;
+			if (regex == NULL) {
+				regex = g_regex_new("^([0-9a-f]+) refs/(stash@\\{[0-9]+\\}): (.*)", 0, 0, &error);
+				if (regex == NULL) {
+					g_error("regex compilation failed: %s", error->message);
+				}
+			}
+			gboolean matched = g_regex_match(regex, entry->data, 0, &matches);
+			if (!matched) {
+				g_warning("regex match failed");
+			} else {
+				gchar **tokens = g_match_info_fetch_all(matches);
+				g_debug("%s: %s, %s, %s, %s", __FUNCTION__, tokens[0], tokens[1], tokens[2], tokens[3]);
+				gchar *sha1 = tokens[1];
+				gchar *id = tokens[2];
+				gchar *label = tokens[3];
+				gtk_list_store_append (list_store, &iter);
+				gtk_list_store_set (list_store, &iter,
+						    COL_ID, id,
+						    COL_STASH, label,
+						    COL_SHA1, sha1,
+						    -1);
+				g_strfreev(tokens);
+			}
+			g_match_info_free(matches);
 		}
 	}
 
@@ -449,7 +458,7 @@ view_stash_list_selection_changed (GtkWidget *widget, gpointer data)
 	GtkTreeIter   iter;
 	GtkTreeModel *model;
 	gboolean      sensitivity;
-	GiggleViewStash     *view = GIGGLE_VIEW_STASH(data);
+	//GiggleViewStash     *view = GIGGLE_VIEW_STASH(data);
 	GiggleViewStashPriv *priv;
 
 	g_debug(__FUNCTION__);
@@ -457,17 +466,21 @@ view_stash_list_selection_changed (GtkWidget *widget, gpointer data)
 	priv = GET_PRIV (data);
 
 	if (gtk_tree_selection_get_selected(GTK_TREE_SELECTION(widget), &model, &iter)) {
-		gchar *id = NULL;
+		gchar *sha1 = NULL;
 
 		sensitivity = TRUE;
 		
-		gtk_tree_model_get (model, &iter, COL_ID, &id, -1); 
-		view_stash_show (view, id);
+		gtk_tree_model_get (model, &iter, COL_ID, &sha1, -1); 
+		GiggleRevision *rev = giggle_revision_new(sha1);
+		giggle_diff_view_set_revisions (GIGGLE_DIFF_VIEW(priv->diff_view),
+			rev, NULL, NULL);
 	} else {
 		sensitivity = FALSE;
 		
 		/* clear the diff view */
-		// TODO giggle_diff_view_set_diff (GIGGLE_DIFF_VIEW(priv->diff_view), "");
+		GiggleRevision *rev = giggle_revision_new("HEAD");
+		giggle_diff_view_set_revisions (GIGGLE_DIFF_VIEW(priv->diff_view),
+			rev, rev, NULL);
 	}
 
 	/* Update buttons */
@@ -553,65 +566,6 @@ view_stash_subcommand_job_callback (GiggleGit *git,
 	} else {
 		/* Tell GiggleGit listeners to update */
 		giggle_git_changed (priv->git);
-	}
-
-	if (priv->subcommand_job)
-		g_object_unref (priv->subcommand_job);
-	priv->subcommand_job = NULL;
-}
-
-static void
-view_stash_show (GiggleViewStash *view,
-		    gchar           *id)
-{
-	GiggleViewStashPriv *priv;
-
-	priv = GET_PRIV (view);
-
-	if (priv->subcommand_job) {
-		giggle_git_cancel_job (priv->git, priv->subcommand_job);
-		g_object_unref (priv->subcommand_job);
-		priv->subcommand_job = NULL;
-	}
-
-	priv->subcommand_job = giggle_git_stash_show_new (id);
-
-	giggle_git_run_job (priv->git,
-			    priv->subcommand_job,
-			    view_stash_show_job_callback,
-			    view);
-}
-
-static void
-view_stash_show_job_callback (GiggleGit *git,
-			            GiggleJob *job,
-			            GError    *error,
-			            gpointer   user_data)
-{
-	GiggleViewStash     *view = GIGGLE_VIEW_STASH(user_data);
-	GiggleViewStashPriv *priv;
-
-	g_debug(__FUNCTION__);
-
-	priv = GET_PRIV (view);
-
-	if (error) {
-		GtkWidget *dialog;
-
-		dialog = gtk_message_dialog_new (NULL,
-						 GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
-						 GTK_MESSAGE_ERROR,
-						 GTK_BUTTONS_CLOSE,
-						 _("An error ocurred when stash saving:\n%s"),
-						 error->message);
-
-		gtk_dialog_run (GTK_DIALOG (dialog));
-		gtk_widget_destroy (dialog);
-	} else {
-/* TODO
-		giggle_diff_view_set_diff (GIGGLE_DIFF_VIEW(priv->diff_view),
-			giggle_git_stash_show_get_result (GIGGLE_GIT_STASH_SHOW(priv->subcommand_job)));
-*/
 	}
 
 	if (priv->subcommand_job)
