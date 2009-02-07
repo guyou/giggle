@@ -33,6 +33,7 @@
 #include "giggle-helpers.h"
 #include "giggle-view-file.h"
 #include "giggle-view-history.h"
+#include "giggle-view-stash.h"
 #include "giggle-view-shell.h"
 #include "giggle-view-summary.h"
 
@@ -93,6 +94,7 @@ typedef struct {
 	/* Views */
 	GtkWidget           *file_view;
 	GtkWidget           *history_view;
+	GtkWidget           *stash_view;
 
 	/* Dialogs */
 	GtkWidget           *summary_dialog;
@@ -1587,6 +1589,7 @@ giggle_window_init (GiggleWindow *window)
 	priv->view_shell = giggle_view_shell_new_with_ui (priv->ui_manager);
 	priv->history_view = giggle_view_history_new (priv->ui_manager);
 	priv->file_view = giggle_view_file_new ();
+	priv->stash_view = giggle_view_stash_new ();
 
 	window_create_recent_manager (window);
 	window_create_find_bar (window);
@@ -1610,6 +1613,8 @@ giggle_window_init (GiggleWindow *window)
 				       GIGGLE_VIEW (priv->file_view));
 	giggle_view_shell_append_view (GIGGLE_VIEW_SHELL (priv->view_shell),
 				       GIGGLE_VIEW (priv->history_view));
+	giggle_view_shell_append_view (GIGGLE_VIEW_SHELL (priv->view_shell),
+				       GIGGLE_VIEW (priv->stash_view));
 
 	gtk_box_pack_start_defaults (GTK_BOX (priv->content_vbox),
 				     priv->view_shell);

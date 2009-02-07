@@ -64,6 +64,8 @@ giggle_SOURCES= \
 	giggle-view-shell.h \
 	giggle-view-summary.c \
 	giggle-view-summary.h \
+	giggle-view-stash.c \
+	giggle-view-stash.h \
 	giggle-window.c \
 	giggle-window.h \
 	giggle-main.c
