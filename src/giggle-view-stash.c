@@ -412,7 +412,7 @@ view_stash_list_job_callback (GiggleGit *git,
 		GtkTreeIter   iter;
                 GSList *entry;
 
-		list_store = gtk_list_store_new (2, G_TYPE_STRING, G_TYPE_STRING);
+		list_store = gtk_list_store_new (3, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING);
 		gtk_tree_view_set_model (GTK_TREE_VIEW(priv->states_list), GTK_TREE_MODEL(list_store));
 
 		entry = giggle_git_stash_list_get_states (GIGGLE_GIT_STASH_LIST(priv->list_job));
