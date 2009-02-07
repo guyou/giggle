@@ -94,8 +94,6 @@ libgiggle_git_la_SOURCES = \
 	giggle-git-stash-list.h \
 	giggle-git-stash-save.c \
 	giggle-git-stash-save.h \
-	giggle-git-stash-show.c \
-	giggle-git-stash-show.h \
 	giggle-git-stash-subcommand.c \
 	giggle-git-stash-subcommand.h \
 	giggle-git-write-config.c \
