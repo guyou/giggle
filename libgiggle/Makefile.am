@@ -104,6 +104,14 @@ libgiggle_git_la_SOURCES = \
 	giggle-git-remote-list.h \
 	giggle-git-revisions.c \
 	giggle-git-revisions.h \
+	giggle-git-stash-clear.c \
+	giggle-git-stash-clear.h \
+	giggle-git-stash-list.c \
+	giggle-git-stash-list.h \
+	giggle-git-stash-save.c \
+	giggle-git-stash-save.h \
+	giggle-git-stash-subcommand.c \
+	giggle-git-stash-subcommand.h \
 	giggle-git-write-config.c \
 	giggle-git-write-config.h
 	 

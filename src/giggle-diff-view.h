@@ -69,6 +69,9 @@ void               giggle_diff_view_scroll_to_file    (GiggleDiffView *diff_view
 
 const char *       giggle_diff_view_get_current_file  (GiggleDiffView *diff_view);
 
+void               giggle_diff_view_set_diff  (GiggleDiffView *view,
+						       const gchar *text);
+
 G_END_DECLS
 
 #endif /* __GIGGLE_DIFF_VIEW_H__ */
