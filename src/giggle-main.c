@@ -59,13 +59,17 @@ main (int    argc,
 
 	context = g_option_context_new (_("- a graphical frontend for the git directory tracker"));
 	g_option_context_add_main_entries (context, options, GETTEXT_PACKAGE);
-        g_option_context_add_group (context, gtk_get_option_group (TRUE));
+	g_option_context_add_group (context, gtk_get_option_group (TRUE));
 
-        if (!g_option_context_parse (context, &argc, &argv, &error))
-        {
-		g_printerr ("%s: %s\n", GETTEXT_PACKAGE, error->message);
-		g_printerr (_("Try `%s --help' for more information.\n"), GETTEXT_PACKAGE);
+	if (!g_option_context_parse (context, &argc, &argv, &error))
+	{
+		char *basename = g_filename_display_basename (argv[0]);
+		g_printerr ("%s: %s\n", basename, error->message);
+		g_printerr (_("Try `%s --help' for more information.\n"), basename);
+
 		result = EXIT_FAILURE;
+		g_free (basename);
+
 		goto end;
 	}
 
