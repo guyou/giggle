@@ -80,9 +80,11 @@ git_stash_list_finalize (GObject *object)
 static gboolean
 git_stash_list_get_command_line (GiggleJob *job, gchar **command_line)
 {
-	//*command_line = g_strdup_printf (GIT_COMMAND " stash list");
-	// We are interested in SHA1, but no way to obtain this info via
-	// "list" subcommand
+	/*
+	 * We are interested in SHA1, but no way to obtain this info via
+	 * "list" subcommand
+	 * *command_line = g_strdup_printf (GIT_COMMAND " stash list");
+	 */
 	*command_line = g_strdup_printf (GIT_COMMAND " log --no-color --pretty=oneline -g refs/stash");
 
 	return TRUE;
