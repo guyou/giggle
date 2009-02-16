@@ -26,13 +26,14 @@
 #include "giggle-view-diff.h"
 #include "giggle-view-shell.h"
 
-#include "libgiggle/giggle-configuration.h"
-#include "libgiggle/giggle-git-diff.h"
-#include "libgiggle/giggle-git-refs.h"
-#include "libgiggle/giggle-git-revisions.h"
-#include "libgiggle/giggle-git.h"
-#include "libgiggle/giggle-history.h"
-#include "libgiggle/giggle-searchable.h"
+#include <libgiggle/giggle-history.h>
+#include <libgiggle/giggle-searchable.h>
+
+#include <libgiggle-git/giggle-git.h>
+#include <libgiggle-git/giggle-git-diff.h>
+#include <libgiggle-git/giggle-git-refs.h>
+#include <libgiggle-git/giggle-git-revisions.h>
+#include <libgiggle-git/giggle-git-config.h>
 
 #include <gdk/gdkkeysyms.h>
 #include <glib/gi18n.h>
@@ -68,7 +69,7 @@ typedef struct {
 	GiggleGit               *git;
 	GiggleJob               *job;
 	GiggleJob               *diff_current_job;
-	GiggleConfiguration     *configuration;
+	GiggleGitConfig         *configuration;
 
 	guint                    selection_changed_idle;
 } GiggleViewHistoryPriv;
@@ -442,9 +443,9 @@ view_history_idle_cb (gpointer data)
 
 	priv = GET_PRIV (data);
 
-	giggle_configuration_bind (priv->configuration,
-				   CONFIG_FIELD_HISTORY_VIEW_VPANE_POSITION,
-				   G_OBJECT (priv->main_vpaned), "position");
+	giggle_git_config_bind (priv->configuration,
+				GIGGLE_GIT_CONFIG_FIELD_HISTORY_VIEW_VPANE_POSITION,
+				G_OBJECT (priv->main_vpaned), "position");
 
 	return FALSE;
 }
@@ -579,7 +580,8 @@ view_history_setup_revision_pane (GObject *object)
 
 	toolbar = gtk_ui_manager_get_widget (priv->ui_manager, "/ViewHistoryToolbar");
 
-	priv->revision_shell = giggle_view_shell_new_with_ui (priv->ui_manager);
+	priv->revision_shell = giggle_view_shell_new_with_ui (priv->ui_manager,
+							      "ViewHistoryShellActions");
 	giggle_view_shell_add_placeholder (GIGGLE_VIEW_SHELL (priv->revision_shell),
 					   "/ViewHistoryToolbar/ViewShell");
 	gtk_container_set_border_width (GTK_CONTAINER (priv->revision_shell), 6);
@@ -616,7 +618,7 @@ view_history_constructed (GObject *object)
 	g_signal_connect_swapped (priv->git, "changed",
 				  G_CALLBACK (view_history_git_changed), object);
 
-	priv->configuration = giggle_configuration_new ();
+	priv->configuration = giggle_git_config_new ();
 
 	gtk_widget_push_composite_child ();
 

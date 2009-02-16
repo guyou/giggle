@@ -1,5 +1,6 @@
 AM_CPPFLAGS = \
 	-I$(top_srcdir) \
+	-DICONDIR='"$(datadir)/icons"' \
 	-DGLADEDIR='"$(pkgdatadir)/glade"' \
 	-DPACKAGE_WEBSITE='"http://live.gnome.org/giggle/"' \
 	$(GIGGLE_CFLAGS) $(PLATFORM_CFLAGS) \
@@ -7,7 +8,7 @@ AM_CPPFLAGS = \
 
 AM_LDFLAGS = \
 	$(PLATFORM_LDFLAGS) \
-	-Wl,--export-dynamic
+	-Wl,--export-dynamic -rpath '$(libdir)'
 
 bin_PROGRAMS = giggle
 
@@ -84,8 +85,7 @@ endif
 
 LDADD = \
 	../libgiggle/libgiggle.la \
-	../libgiggle/libgiggle-git.la \
-	$(libgiggle_la_LIBADD)
+	../libgiggle-git/libgiggle-git.la
 
 #test_graph_renderer_SOURCES = \
 #	giggle-revision.c giggle-revision.h \
