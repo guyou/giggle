@@ -45,7 +45,7 @@ main (int    argc,
 	GtkWidget      *window = NULL;
 	GError         *error = NULL;
 	GOptionContext *context;
-	char           *dir;
+	char           *dir, *description;
 	int             result = EXIT_SUCCESS;
 	
 	bindtextdomain (GETTEXT_PACKAGE, LOCALEDIR);  
@@ -57,12 +57,17 @@ main (int    argc,
 	gdk_threads_init ();
 	gdk_threads_enter ();
 
-	context = g_option_context_new (_("- a graphical frontend for the git directory tracker"));
+ 	context = g_option_context_new (_("[DIRECTORY]"));
+
+	description = g_strdup_printf (_("Report errors (in English, with LC_ALL=C) to <%s>."), PACKAGE_BUGREPORT);
+	g_option_context_set_summary (context, _("Giggle is a graphical frontend for the git directory tracker."));
+	g_option_context_set_description (context, description);
+	g_free (description);
+
 	g_option_context_add_main_entries (context, options, GETTEXT_PACKAGE);
 	g_option_context_add_group (context, gtk_get_option_group (TRUE));
 
-	if (!g_option_context_parse (context, &argc, &argv, &error))
-	{
+	if (!g_option_context_parse (context, &argc, &argv, &error)) {
 		char *basename = g_filename_display_basename (argv[0]);
 		g_printerr ("%s: %s\n", basename, error->message);
 		g_printerr (_("Try `%s --help' for more information.\n"), basename);

@@ -18,23 +18,27 @@
  * Boston, MA 02111-1307, USA.
  */
 
-#include <config.h>
-#include <glib/gi18n.h>
-#include <gtk/gtk.h>
-#include <string.h>
+#include "config.h"
+#include "giggle-revision-view.h"
+#include "giggle-avatar-image.h"
 
 #include "libgiggle/giggle-git.h"
 #include "libgiggle/giggle-git-log.h"
-#include "giggle-revision-view.h"
 #include "libgiggle/giggle-revision.h"
 #include "libgiggle/giggle-searchable.h"
+
+#include <glib/gi18n.h>
+#include <string.h>
 
 typedef struct GiggleRevisionViewPriv GiggleRevisionViewPriv;
 
 struct GiggleRevisionViewPriv {
 	GiggleRevision *revision;
 
+	GtkWidget      *table;
 	GtkWidget      *branches;
+	GtkWidget      *avatar;
+	GtkWidget      *author;
 	GtkWidget      *date;
 	GtkWidget      *sha;
 	GtkWidget      *log;
@@ -121,57 +125,79 @@ revision_view_create_label (const char *label,
 }
 
 static void
+revision_view_attach_info (GtkWidget  *table,
+			   const char *label,
+			   GtkWidget  *info,
+			   int         row)
+{
+	int              xpad = 6, ypad = 3;
+	double           yalign = 0.5;
+	GtkAttachOptions yattach = GTK_FILL;
+	int              end = 2;
+
+	if (GTK_IS_BUTTON (info))
+		xpad = ypad = 0;
+
+	if (GTK_IS_SCROLLED_WINDOW (info)) {
+		xpad = MAX (0, xpad - info->style->xthickness);
+		ypad = MAX (0, ypad - info->style->ythickness);
+		yattach |= GTK_EXPAND;
+		yalign = 0.0;
+		end = 3;
+	}
+
+	gtk_table_attach (GTK_TABLE (table),
+			  revision_view_create_label (label, 0.0, yalign),
+			  0, 1, row, row + 1, GTK_FILL, GTK_FILL, 6, 2);
+	gtk_table_attach (GTK_TABLE (table), info, 1, end, row, row + 1,
+			  GTK_FILL | GTK_EXPAND, yattach, xpad, ypad);
+}
+
+static GtkWidget *
+revision_view_create_info (GtkWidget  *table,
+			   const char *label,
+			   int         row)
+{
+	GtkWidget *info;
+
+	info = gtk_label_new (NULL);
+	gtk_label_set_ellipsize (GTK_LABEL (info), PANGO_ELLIPSIZE_END);
+	gtk_label_set_selectable (GTK_LABEL (info), TRUE);
+	gtk_misc_set_alignment (GTK_MISC (info), 0.0, 0.5);
+
+	revision_view_attach_info (table, label, info, row);
+
+	return info;
+}
+
+static void
 giggle_revision_view_init (GiggleRevisionView *view)
 {
 	GiggleRevisionViewPriv *priv;
 	GtkWidget              *scrolled_window;
-	GtkWidget              *table;
 	GtkTextBuffer          *buffer;
 	GtkTextIter             iter;
+	int                     row = 0;
 
 	priv = GET_PRIV (view);
 	priv->git = giggle_git_get ();
 
-	table = g_object_new (GTK_TYPE_TABLE,
-			      "column-spacing", 12,
-			      "row-spacing", 6, NULL);
+	priv->table = gtk_table_new (5, 3, FALSE);
 
-	priv->date = gtk_label_new (NULL);
-	gtk_label_set_ellipsize (GTK_LABEL (priv->date), PANGO_ELLIPSIZE_END);
-	gtk_label_set_selectable (GTK_LABEL (priv->date), TRUE);
-	gtk_misc_set_alignment (GTK_MISC (priv->date), 0.0, 0.5);
-	gtk_widget_show (priv->date);
+	priv->avatar = giggle_avatar_image_new ();
+	gtk_misc_set_alignment (GTK_MISC (priv->avatar), 0.5, 0.0);
+	giggle_avatar_image_set_image_size (GIGGLE_AVATAR_IMAGE (priv->avatar), 80);
 
-	gtk_table_attach (GTK_TABLE (table),
-			  revision_view_create_label (_("Date:"), 0.0, 0.5),
-			  0, 1, 0, 1, GTK_FILL, GTK_FILL, 0, 0);
-	gtk_table_attach (GTK_TABLE (table), priv->date,
-			  1, 2, 0, 1,
-			  GTK_EXPAND | GTK_FILL, GTK_FILL, 0, 0);
+	gtk_table_attach (GTK_TABLE (priv->table), priv->avatar,
+			  2, 3, 0, 4, GTK_FILL, GTK_FILL, 3, 3);
 
-	priv->sha = gtk_label_new (NULL);
-	gtk_label_set_ellipsize (GTK_LABEL (priv->sha), PANGO_ELLIPSIZE_END);
-	gtk_label_set_selectable (GTK_LABEL (priv->sha), TRUE);
-	gtk_misc_set_alignment (GTK_MISC (priv->sha), 0.0, 0.5);
-	gtk_widget_show (priv->sha);
+	priv->author = gtk_link_button_new ("");
+	gtk_button_set_alignment (GTK_BUTTON (priv->author), 0.0, 0.5);
+	revision_view_attach_info (priv->table, _("Author:"), priv->author, row++);
 
-	gtk_table_attach (GTK_TABLE (table),
-			  revision_view_create_label (_("SHA:"), 0.0, 0.5),
-			  0, 1, 1, 2, GTK_FILL, GTK_FILL, 0, 0);
-	gtk_table_attach (GTK_TABLE (table), priv->sha,
-			  1, 2, 1, 2, GTK_EXPAND | GTK_FILL, GTK_FILL, 0, 0);
-
-	priv->branches = gtk_label_new (NULL);
-	gtk_label_set_ellipsize (GTK_LABEL (priv->branches), PANGO_ELLIPSIZE_END);
-	gtk_label_set_selectable (GTK_LABEL (priv->branches), TRUE);
-	gtk_misc_set_alignment (GTK_MISC (priv->branches), 0.0, 0.5);
-	gtk_widget_show (priv->branches);
-
-	gtk_table_attach (GTK_TABLE (table),
-			  revision_view_create_label (_("Branches:"), 0.0, 0.5),
-			  0, 1, 2, 3, GTK_FILL, GTK_FILL, 0, 0);
-	gtk_table_attach (GTK_TABLE (table), priv->branches,
-			  1, 2, 2, 3, GTK_EXPAND | GTK_FILL, GTK_FILL, 0, 0);
+	priv->date     = revision_view_create_info (priv->table, _("Date:"),     row++);
+	priv->sha      = revision_view_create_info (priv->table, _("SHA:"),      row++);
+	priv->branches = revision_view_create_info (priv->table, _("Branches:"), row++);
 
 	scrolled_window = gtk_scrolled_window_new (NULL, NULL);
 	gtk_scrolled_window_set_shadow_type (GTK_SCROLLED_WINDOW (scrolled_window),
@@ -189,20 +215,16 @@ giggle_revision_view_init (GiggleRevisionView *view)
 
 	gtk_container_add (GTK_CONTAINER (scrolled_window), priv->log);
 
-	gtk_table_attach (GTK_TABLE (table),
-			  revision_view_create_label (_("Change Log:"), 0.0, 0.0),
-			  0, 1, 3, 4, GTK_FILL, GTK_FILL, 0, 0);
-	gtk_table_attach (GTK_TABLE (table), scrolled_window,
-			  1, 2, 3, 4, GTK_EXPAND | GTK_FILL, GTK_EXPAND | GTK_FILL, 0, 0);
-
+	revision_view_attach_info (priv->table, _("Change Log:"), scrolled_window, row);
 
 	gtk_text_buffer_get_start_iter (buffer, &iter);
 	priv->search_mark = gtk_text_buffer_create_mark (buffer,
 							 "search-mark",
 							 &iter, FALSE);
 
-	gtk_container_add (GTK_CONTAINER (view), table);
-	gtk_widget_show_all (table);
+	gtk_container_add (GTK_CONTAINER (view), priv->table);
+	gtk_widget_show_all (priv->table);
+	gtk_widget_hide (priv->table);
 
 	gtk_widget_grab_focus (priv->log);
 }
@@ -394,24 +416,32 @@ revision_view_update (GiggleRevisionView *view)
 {
 	GiggleRevisionViewPriv *priv;
 	GtkTextBuffer          *buffer;
-	gchar                  *sha;
-	struct tm              *tm;
-	gchar                   str[256];
+	const char             *sha = NULL;
+	const char             *author = NULL;
+	const char             *email = NULL;
+	const struct tm        *date;
+	char                    str[256];
+	char                   *uri = NULL;
 
 	priv = GET_PRIV (view);
 
+	buffer = gtk_text_view_get_buffer (GTK_TEXT_VIEW (priv->log));
+	gtk_text_buffer_set_text (buffer, "", -1);
+
 	if (priv->revision) {
-		g_object_get (priv->revision,
-			      "sha", &sha, 
-			      "date", &tm,
-			      NULL);
+		sha    = giggle_revision_get_sha    (priv->revision);
+		date   = giggle_revision_get_date   (priv->revision);
+		author = giggle_revision_get_author (priv->revision);
+		email  = giggle_revision_get_email  (priv->revision);
 
-		gtk_label_set_text (GTK_LABEL (priv->sha), sha);
-		g_free (sha);
+		if (email)
+			uri = g_strdup_printf ("mailto:%s <%s>", author, email);
 
-		if (tm) {
-			strftime (str, sizeof (str), "%c", tm);
+		if (date) {
+			strftime (str, sizeof (str), "%c", date);
 			gtk_label_set_text (GTK_LABEL (priv->date), str);
+		} else {
+			gtk_label_set_text (GTK_LABEL (priv->date), NULL);
 		}
 
 		if (priv->job) {
@@ -426,14 +456,23 @@ revision_view_update (GiggleRevisionView *view)
 				    revision_view_update_log_cb,
 				    view);
 	} else {
-		gtk_label_set_text (GTK_LABEL (priv->sha), NULL);
 		gtk_label_set_text (GTK_LABEL (priv->date), NULL);
-
-		buffer = gtk_text_view_get_buffer (GTK_TEXT_VIEW (priv->log));
-		gtk_text_buffer_set_text (buffer, "", -1);
 	}
 
+	gtk_label_set_text (GTK_LABEL (priv->sha), sha);
+	gtk_button_set_label (GTK_BUTTON (priv->author), author);
+	gtk_link_button_set_uri (GTK_LINK_BUTTON (priv->author), uri ? uri : "");
+	giggle_avatar_image_set_gravatar_id (GIGGLE_AVATAR_IMAGE (priv->avatar), email);
+
 	revision_view_update_branches_label (view);
+
+	if (priv->revision) {
+		gtk_widget_show (priv->table);
+	} else {
+		gtk_widget_hide (priv->table);
+	}
+
+	g_free (uri);
 }
 
 GtkWidget *
