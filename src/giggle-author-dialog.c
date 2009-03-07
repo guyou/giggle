@@ -34,6 +34,7 @@ static void author_dialog_job_callback (GiggleGit *git,
 					GiggleJob *job,
 					GError    *error,
 					gpointer   user_data);
+static void author_dialog_list_selection_changed (GtkWidget *widget, gpointer data);
 
 
 typedef struct GiggleAuthorDialogPriv GiggleAuthorDialogPriv;
@@ -42,6 +43,8 @@ struct GiggleAuthorDialogPriv {
 	GiggleGit    *git;
 	GiggleJob    *job;
 	GtkTreeView  *tree;
+	GtkWidget    *ok_button;
+	gchar        *author;
 };
 
 #define GET_PRIV(obj) (G_TYPE_INSTANCE_GET_PRIVATE ((obj), GIGGLE_TYPE_AUTHOR_DIALOG, GiggleAuthorDialogPriv))
@@ -50,7 +53,7 @@ G_DEFINE_TYPE (GiggleAuthorDialog, giggle_author_dialog, GTK_TYPE_DIALOG);
 
 enum
 {
-  COL_NAME = 0,
+  COL_AUTHOR = 0,
   NUM_COLS
 } ;
 
@@ -69,8 +72,9 @@ static void
 giggle_author_dialog_init (GiggleAuthorDialog *author_window)
 {
 	GiggleAuthorDialogPriv *priv;
-	GtkCellRenderer     *renderer;
-	GtkWidget            *view;
+	GtkCellRenderer        *renderer;
+	GtkWidget              *view;
+	GtkTreeSelection       *selection;
 
 	priv = GET_PRIV (author_window);
 
@@ -89,9 +93,12 @@ giggle_author_dialog_init (GiggleAuthorDialog *author_window)
                                                -1,      
                                                "Author",  
                                                renderer,
-                                               "text", COL_NAME,
+                                               "text", COL_AUTHOR,
                                                NULL);
 
+	selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(view));
+	gtk_tree_selection_set_mode (selection, GTK_SELECTION_SINGLE);
+	g_signal_connect(selection, "changed", G_CALLBACK(author_dialog_list_selection_changed), author_window);
 
 
 	gtk_widget_show_all (view);
@@ -103,8 +110,8 @@ giggle_author_dialog_init (GiggleAuthorDialog *author_window)
 
 	gtk_dialog_add_button (GTK_DIALOG (author_window),
 			       GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL);
-	gtk_dialog_add_button (GTK_DIALOG (author_window),
-			       GTK_STOCK_OK, GTK_RESPONSE_OK);
+	priv->ok_button = gtk_dialog_add_button (GTK_DIALOG (author_window),
+					         GTK_STOCK_OK, GTK_RESPONSE_OK);
 
 	/* initialize for first time */
 	author_dialog_update (author_window);
@@ -173,7 +180,7 @@ author_dialog_job_callback (GiggleGit *git,
 			gchar *name = g_strdup (giggle_author_get_string (GIGGLE_AUTHOR (authors->data)));
 			gtk_list_store_append (store, &iter);
 			gtk_list_store_set (store, &iter,
-					    COL_NAME, name,
+					    COL_AUTHOR, name,
 					    -1);
 		}
 
@@ -205,4 +212,53 @@ author_dialog_update (GiggleAuthorDialog *view)
 			    priv->job,
 			    author_dialog_job_callback,
 			    view);
+}
+
+static void
+author_dialog_list_selection_changed (GtkWidget *widget, gpointer data)
+{
+	GtkTreeIter   iter;
+	GtkTreeModel *model;
+	gboolean      sensitivity;
+	//GiggleViewStash     *view = GIGGLE_VIEW_STASH(data);
+	GiggleAuthorDialogPriv *priv;
+
+	priv = GET_PRIV (data);
+
+	if (gtk_tree_selection_get_selected(GTK_TREE_SELECTION(widget), &model, &iter)) {
+		gchar *author = NULL;
+
+		sensitivity = TRUE;
+		
+		gtk_tree_model_get (model, &iter, COL_AUTHOR, &author, -1); 
+
+		/* Save the selected author */
+		g_free (priv->author);
+		priv->author = author;
+		author = NULL;
+	} else {
+		sensitivity = FALSE;
+		
+		/* Clean the saved author */
+		g_free (priv->author);
+		priv->author = NULL;
+	}
+
+	/* Update buttons */
+	gtk_widget_set_sensitive(priv->ok_button, sensitivity);
+}
+
+gchar *
+giggle_author_dialog_get_author (GiggleAuthorDialog *self)
+{
+	GiggleAuthorDialogPriv *priv;
+	gchar                  *author = NULL;
+
+	priv = GET_PRIV (self);
+
+	if (priv->author) {
+		author = g_strdup (priv->author);
+	}
+
+	return author;
 }

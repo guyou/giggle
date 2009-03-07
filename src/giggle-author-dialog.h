@@ -48,6 +48,7 @@ struct _GiggleAuthorDialog
 
 GType giggle_author_dialog_get_type (void) G_GNUC_CONST;
 GtkWidget *giggle_author_dialog_new (void);
+gchar *giggle_author_dialog_get_author (GiggleAuthorDialog *self);
 
 G_END_DECLS
 
