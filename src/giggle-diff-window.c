@@ -21,6 +21,7 @@
 #include "config.h"
 #include "giggle-diff-window.h"
 #include "giggle-diff-view.h"
+#include "giggle-author-dialog.h"
 
 #include <libgiggle/giggle-job.h>
 
@@ -35,6 +36,7 @@ typedef struct GiggleDiffWindowPriv GiggleDiffWindowPriv;
 struct GiggleDiffWindowPriv {
 	GtkWidget *diff_view;
 	GtkWidget *commit_textview;
+	GtkWidget *author_entry;
 
 	GList     *files;
 
@@ -46,6 +48,8 @@ static void       diff_window_finalize           (GObject        *object);
 static void       diff_window_map                (GtkWidget      *widget);
 static void       diff_window_response           (GtkDialog      *dialog,
 						  gint            response);
+static void       diff_window_change_author      (GtkButton *button,
+                                                  void      *data);
 
 
 G_DEFINE_TYPE (GiggleDiffWindow, giggle_diff_window, GTK_TYPE_DIALOG)
@@ -72,6 +76,7 @@ giggle_diff_window_init (GiggleDiffWindow *diff_window)
 	GiggleDiffWindowPriv *priv;
 	GtkWidget            *vbox, *scrolled_window;
 	GtkWidget            *vbox2, *label;
+	GtkWidget            *hbox, *entry, *select;
 	gchar                *str;
 
 	priv = GET_PRIV (diff_window);
@@ -83,6 +88,30 @@ giggle_diff_window_init (GiggleDiffWindow *diff_window)
 
 	vbox = gtk_vbox_new (FALSE, 12);
 	gtk_container_set_border_width (GTK_CONTAINER (vbox), 7);
+
+	/* Author */
+	hbox = gtk_hbox_new (FALSE, 12);
+	gtk_container_set_border_width (GTK_CONTAINER (hbox), 7);
+
+	label = gtk_label_new (NULL);
+	str = g_strdup_printf ("<b>%s</b>", _("Author:"));
+	gtk_label_set_markup (GTK_LABEL (label), str);
+	g_free (str);
+	gtk_box_pack_start (GTK_BOX (hbox), label, FALSE, TRUE, 0);
+
+	entry = gtk_entry_new ();
+	gtk_box_pack_start (GTK_BOX (hbox), entry, TRUE, TRUE, 0);
+	/* TODO gtk_entry_set_text (GTK_ENTRY (entry), commiter); */
+	priv->author_entry = entry;
+
+	select = gtk_button_new_with_label (_("..."));
+	gtk_box_pack_start (GTK_BOX (hbox), select, FALSE, TRUE, 0);
+	g_signal_connect(G_OBJECT(select), "clicked", G_CALLBACK(diff_window_change_author), diff_window);
+
+
+	gtk_widget_show_all (hbox);
+
+	gtk_box_pack_start (GTK_BOX (vbox), hbox, FALSE, TRUE, 0);
 
 	/* diff view */
 	priv->diff_view = giggle_diff_view_new ();
@@ -278,4 +307,33 @@ giggle_diff_window_set_files (GiggleDiffWindow *window,
 	}
 
 	priv->files = files;
+}
+
+static void
+diff_window_change_author (GtkButton *button,
+ 			   void      *data)
+{
+	GiggleDiffWindow *self = GIGGLE_DIFF_WINDOW (data);
+	GiggleDiffWindowPriv *priv = GET_PRIV (self);
+	GtkWidget *dialog;
+	gint result;
+	gchar *author = NULL;
+
+	dialog = giggle_author_dialog_new ();
+	result = gtk_dialog_run (GTK_DIALOG (dialog));
+	switch (result)
+	{
+		case GTK_RESPONSE_OK:
+			author = giggle_author_dialog_get_author (GIGGLE_AUTHOR_DIALOG (dialog));
+			g_debug ("%s: %s", __FUNCTION__, author);
+			gtk_entry_set_text (GTK_ENTRY (priv->author_entry), author);
+			g_free (author);
+			author = NULL;
+			break;
+		default:
+			/* Nothing to do */
+			break;
+	}
+	gtk_widget_destroy (dialog);
+
 }
