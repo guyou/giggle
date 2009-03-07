@@ -30,6 +30,10 @@ libgiggle_git_h_files =  \
 	giggle-git-refs.h \
 	giggle-git-remote-list.h \
 	giggle-git-revisions.h \
+	giggle-git-stash-clear.h \
+	giggle-git-stash-list.h \
+	giggle-git-stash-save.h \
+	giggle-git-stash-subcommand.h \
 	$(NULL)
 
 libgiggle_git_la_SOURCES = \
@@ -54,6 +58,10 @@ libgiggle_git_la_SOURCES = \
 	giggle-git-refs.c \
 	giggle-git-remote-list.c \
 	giggle-git-revisions.c \
+	giggle-git-stash-clear.c \
+	giggle-git-stash-list.c \
+	giggle-git-stash-save.c \
+	giggle-git-stash-subcommand.c \
         giggle-git.c \
 	$(NULL)
 	 

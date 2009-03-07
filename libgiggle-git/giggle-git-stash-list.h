@@ -24,7 +24,7 @@
 
 #include <glib-object.h>
 
-#include "giggle-job.h"
+#include <libgiggle/giggle-job.h>
 
 G_BEGIN_DECLS
 
@@ -45,15 +45,6 @@ struct GiggleGitStashList {
 struct GiggleGitStashListClass {
 	GiggleJobClass parent_class;
 };
-
-typedef enum {
-	GIGGLE_GIT_FILE_STATUS_OTHER = 0,
-	GIGGLE_GIT_FILE_STATUS_CACHED,
-	GIGGLE_GIT_FILE_STATUS_UNMERGED,
-	GIGGLE_GIT_FILE_STATUS_DELETED,
-	GIGGLE_GIT_FILE_STATUS_CHANGED,
-	GIGGLE_GIT_FILE_STATUS_KILLED,
-}  GiggleGitStashListStatus;
 
 GType		         giggle_git_stash_list_get_type   (void);
 GiggleJob *              giggle_git_stash_list_new        (void);

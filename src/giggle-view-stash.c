@@ -23,11 +23,11 @@
 #include <glib/gi18n.h>
 #include <glade/glade.h>
 
-#include "libgiggle/giggle-git.h"
-#include "libgiggle/giggle-git-stash-list.h"
-#include "libgiggle/giggle-git-stash-save.h"
-#include "libgiggle/giggle-git-stash-subcommand.h"
-#include "libgiggle/giggle-git-stash-clear.h"
+#include "libgiggle-git/giggle-git.h"
+#include "libgiggle-git/giggle-git-stash-list.h"
+#include "libgiggle-git/giggle-git-stash-save.h"
+#include "libgiggle-git/giggle-git-stash-subcommand.h"
+#include "libgiggle-git/giggle-git-stash-clear.h"
 #include "giggle-diff-view.h"
 #include "giggle-view-stash.h"
 

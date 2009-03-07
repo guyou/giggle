@@ -24,7 +24,7 @@
 
 #include <glib-object.h>
 
-#include "giggle-job.h"
+#include <libgiggle/giggle-job.h>
 
 G_BEGIN_DECLS
 
