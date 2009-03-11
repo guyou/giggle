@@ -26,6 +26,7 @@ typedef struct GiggleGitCommitPriv GiggleGitCommitPriv;
 struct GiggleGitCommitPriv {
 	GList *files;
 	gchar *log;
+	gchar *author;
 };
 
 static void     git_commit_finalize            (GObject           *object);
@@ -50,6 +51,7 @@ enum {
 	PROP_0,
 	PROP_FILES,
 	PROP_LOG,
+	PROP_AUTHOR,
 };
 
 static void
@@ -77,6 +79,13 @@ giggle_git_commit_class_init (GiggleGitCommitClass *class)
 							      "Log for the changeset",
 							      NULL,
 							      G_PARAM_READWRITE));
+	g_object_class_install_property (object_class,
+					 PROP_AUTHOR,
+					 g_param_spec_string ("author",
+							      "Author",
+							      "Author of the changeset (when different from committer)",
+							      NULL,
+							      G_PARAM_READWRITE));
 
 	g_type_class_add_private (object_class, sizeof (GiggleGitCommitPriv));
 }
@@ -84,6 +93,13 @@ giggle_git_commit_class_init (GiggleGitCommitClass *class)
 static void
 giggle_git_commit_init (GiggleGitCommit *dummy)
 {
+	GiggleGitCommitPriv *priv;
+
+	priv = GET_PRIV (dummy);
+
+	priv->files = NULL;
+	priv->log = NULL;
+	priv->author = NULL;
 }
 
 static void
@@ -92,6 +108,8 @@ git_commit_finalize (GObject *object)
 	GiggleGitCommitPriv *priv;
 
 	priv = GET_PRIV (object);
+
+	g_free (priv->author);
 
 	g_free (priv->log);
 
@@ -118,6 +136,9 @@ git_commit_get_property (GObject    *object,
 	case PROP_LOG:
 		g_value_set_string (value, priv->log);
 		break;
+	case PROP_AUTHOR:
+		g_value_set_string (value, priv->author);
+		break;
 	default:
 		G_OBJECT_WARN_INVALID_PROPERTY_ID (object, param_id, pspec);
 		break;
@@ -141,6 +162,9 @@ git_commit_set_property (GObject      *object,
 	case PROP_LOG:
 		priv->log = g_value_dup_string (value);
 		break;
+	case PROP_AUTHOR:
+		priv->author = g_value_dup_string (value);
+		break;
 	default:
 		G_OBJECT_WARN_INVALID_PROPERTY_ID (object, param_id, pspec);
 		break;
@@ -158,6 +182,11 @@ git_commit_get_command_line (GiggleJob *job, gchar **command_line)
 	priv = GET_PRIV (job);
 	files = priv->files;
 	str = g_string_new (GIT_COMMAND " commit");
+
+	if (priv->author) {
+		escaped = g_strescape (priv->author, "\t");
+		g_string_append_printf (str, " --author=\"%s\"", escaped);
+	}
 
 	if (priv->log) {
 		escaped = g_strescape (priv->log, "\b\f\n\r\t\\");
@@ -196,5 +225,16 @@ giggle_git_commit_set_files (GiggleGitCommit *commit,
 
 	g_object_set (commit,
 		      "files", files,
+		      NULL);
+}
+
+void
+giggle_git_commit_set_author (GiggleGitCommit *commit,
+			      const gchar     *author)
+{
+	g_return_if_fail (GIGGLE_IS_GIT_COMMIT (commit));
+
+	g_object_set (commit,
+		      "author", author,
 		      NULL);
 }

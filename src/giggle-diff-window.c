@@ -256,6 +256,7 @@ diff_window_response (GtkDialog *dialog,
 	GtkTextBuffer        *buffer;
 	GtkTextIter           start, end;
 	gchar                *log;
+	const gchar          *author;
 	GList                *files;
 
 	if (response != GTK_RESPONSE_OK) {
@@ -275,9 +276,12 @@ diff_window_response (GtkDialog *dialog,
 	gtk_text_buffer_get_bounds (buffer, &start, &end);
 	log = gtk_text_buffer_get_text (buffer, &start, &end, TRUE);
 	files = diff_window_copy_list (priv->files);
+	author = gtk_entry_get_text (GTK_ENTRY(priv->author_entry));
 
 	priv->job = giggle_git_commit_new (log);
 	giggle_git_commit_set_files (GIGGLE_GIT_COMMIT (priv->job), files);
+	if (author != NULL && strlen(author) != 0)
+		giggle_git_commit_set_author (GIGGLE_GIT_COMMIT (priv->job), author);
 
 	giggle_git_run_job (priv->git,
 			    priv->job,

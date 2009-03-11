@@ -6,6 +6,9 @@ AM_CPPFLAGS = \
 	$(GIGGLE_CFLAGS) $(PLATFORM_CFLAGS) \
 	$(WARN_CFLAGS)
 
+AM_LDFLAGS = \
+	$(PLATFORM_LDFLAGS)
+
 lib_LTLIBRARIES = libgiggle-git.la
 
 libgiggle_git_h_files =  \

@@ -48,6 +48,8 @@ GType		      giggle_git_commit_get_type   (void);
 GiggleJob *           giggle_git_commit_new           (const gchar     *log);
 void                  giggle_git_commit_set_files     (GiggleGitCommit *commit,
 						       GList           *files);
+void                  giggle_git_commit_set_author (GiggleGitCommit *commit,
+						                                        const gchar     *author);
 
 G_END_DECLS
 
