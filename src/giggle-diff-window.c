@@ -102,6 +102,7 @@ giggle_diff_window_init (GiggleDiffWindow *diff_window)
 	entry = gtk_entry_new ();
 	gtk_box_pack_start (GTK_BOX (hbox), entry, TRUE, TRUE, 0);
 	/* TODO gtk_entry_set_text (GTK_ENTRY (entry), commiter); */
+	gtk_entry_set_editable (GTK_ENTRY (entry), FALSE);
 	priv->author_entry = entry;
 
 	select = gtk_button_new_with_label (_("..."));
@@ -321,7 +322,7 @@ diff_window_change_author (GtkButton *button,
 	GiggleDiffWindowPriv *priv = GET_PRIV (self);
 	GtkWidget *dialog;
 	gint result;
-	gchar *author = NULL;
+	const gchar *author = NULL;
 
 	dialog = giggle_author_dialog_new ();
 	result = gtk_dialog_run (GTK_DIALOG (dialog));
@@ -331,7 +332,6 @@ diff_window_change_author (GtkButton *button,
 			author = giggle_author_dialog_get_author (GIGGLE_AUTHOR_DIALOG (dialog));
 			g_debug ("%s: %s", __FUNCTION__, author);
 			gtk_entry_set_text (GTK_ENTRY (priv->author_entry), author);
-			g_free (author);
 			author = NULL;
 			break;
 		default:
