@@ -75,7 +75,10 @@ giggle_author_dialog_init (GiggleAuthorDialog *author_window)
 	GiggleAuthorDialogPriv *priv;
 	GtkCellRenderer        *renderer;
 	GtkWidget              *view;
+	GtkWidget              *scrolled_window;
 	GtkTreeSelection       *selection;
+	GtkWidget              *label;
+	gchar                  *str;
 
 	priv = GET_PRIV (author_window);
 
@@ -86,15 +89,34 @@ giggle_author_dialog_init (GiggleAuthorDialog *author_window)
 	gtk_window_set_default_size (GTK_WINDOW (author_window), 500, 380);
 	gtk_window_set_title (GTK_WINDOW (author_window), _("Commit author"));
 
+	gtk_container_set_border_width (GTK_CONTAINER (GTK_DIALOG (author_window)->vbox), 7);
+	gtk_box_set_homogeneous (GTK_BOX (GTK_DIALOG (author_window)->vbox), FALSE);
+
 	/* Author */
+	label = gtk_label_new (NULL);
+	str = g_strdup_printf ("<b>%s</b>", _("Author:"));
+	gtk_misc_set_alignment (GTK_MISC (label), 0.0, 0.0);
+	gtk_label_set_markup (GTK_LABEL (label), str);
+	g_free (str);
+	gtk_widget_show_all (label);
+	gtk_box_pack_start (GTK_BOX (GTK_DIALOG (author_window)->vbox), label, FALSE, TRUE, 0);
+
 	priv->author_entry = gtk_entry_new ();
 
 	g_signal_connect(priv->author_entry, "changed", G_CALLBACK(author_dialog_entry_changed), author_window);
 
 	gtk_widget_show_all (priv->author_entry);
-	gtk_container_add (GTK_CONTAINER (GTK_DIALOG (author_window)->vbox), priv->author_entry);
+	gtk_box_pack_start (GTK_BOX (GTK_DIALOG (author_window)->vbox), priv->author_entry, FALSE, TRUE, 0);
 
 	/* Known authors */
+	label = gtk_label_new (NULL);
+	str = g_strdup_printf ("<b>%s</b>", _("Known authors:"));
+	gtk_misc_set_alignment (GTK_MISC (label), 0.0, 0.0);
+	gtk_label_set_markup (GTK_LABEL (label), str);
+	g_free (str);
+	gtk_widget_show_all (label);
+	gtk_box_pack_start (GTK_BOX (GTK_DIALOG (author_window)->vbox), label, FALSE, TRUE, 0);
+
 	view = gtk_tree_view_new ();
 	priv->tree = GTK_TREE_VIEW (view);
 
@@ -110,8 +132,13 @@ giggle_author_dialog_init (GiggleAuthorDialog *author_window)
 	gtk_tree_selection_set_mode (selection, GTK_SELECTION_SINGLE);
 	g_signal_connect(selection, "changed", G_CALLBACK(author_dialog_list_selection_changed), author_window);
 
-	gtk_widget_show_all (view);
-	gtk_container_add (GTK_CONTAINER (GTK_DIALOG (author_window)->vbox), view);
+	scrolled_window = gtk_scrolled_window_new (NULL, NULL);
+	gtk_scrolled_window_set_policy (GTK_SCROLLED_WINDOW (scrolled_window),
+					GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
+	gtk_container_add (GTK_CONTAINER (scrolled_window), view);
+
+	gtk_widget_show_all (scrolled_window);
+	gtk_box_pack_start (GTK_BOX (GTK_DIALOG (author_window)->vbox), scrolled_window, TRUE, TRUE, 0);
 
 	g_object_set (author_window,
 		      "has-separator", FALSE,
