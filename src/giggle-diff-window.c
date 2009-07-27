@@ -76,7 +76,7 @@ giggle_diff_window_init (GiggleDiffWindow *diff_window)
 	GiggleDiffWindowPriv *priv;
 	GtkWidget            *vbox, *scrolled_window;
 	GtkWidget            *vbox2, *label;
-	GtkWidget            *hbox, *entry, *select;
+	GtkWidget            *hbox, *select;
 	gchar                *str;
 
 	priv = GET_PRIV (diff_window);
@@ -99,14 +99,10 @@ giggle_diff_window_init (GiggleDiffWindow *diff_window)
 	g_free (str);
 	gtk_box_pack_start (GTK_BOX (hbox), label, FALSE, TRUE, 0);
 
-	entry = gtk_entry_new ();
-	gtk_box_pack_start (GTK_BOX (hbox), entry, TRUE, TRUE, 0);
-	/* TODO gtk_entry_set_text (GTK_ENTRY (entry), commiter); */
-	gtk_entry_set_editable (GTK_ENTRY (entry), FALSE);
-	priv->author_entry = entry;
-
-	select = gtk_button_new_with_label (_("..."));
-	gtk_box_pack_start (GTK_BOX (hbox), select, FALSE, TRUE, 0);
+	select = gtk_button_new_with_label ("");
+	gtk_box_pack_start (GTK_BOX (hbox), select, TRUE, TRUE, 0);
+	/* TODO gtk_button_set_label (GTK_ENTRY (entry), commiter); */
+	priv->author_entry = select;
 	g_signal_connect(G_OBJECT(select), "clicked", G_CALLBACK(diff_window_change_author), diff_window);
 
 
@@ -277,7 +273,7 @@ diff_window_response (GtkDialog *dialog,
 	gtk_text_buffer_get_bounds (buffer, &start, &end);
 	log = gtk_text_buffer_get_text (buffer, &start, &end, TRUE);
 	files = diff_window_copy_list (priv->files);
-	author = gtk_entry_get_text (GTK_ENTRY(priv->author_entry));
+	author = gtk_button_get_label (GTK_BUTTON(priv->author_entry));
 
 	priv->job = giggle_git_commit_new (log);
 	giggle_git_commit_set_files (GIGGLE_GIT_COMMIT (priv->job), files);
@@ -331,7 +327,7 @@ diff_window_change_author (GtkButton *button,
 		case GTK_RESPONSE_OK:
 			author = giggle_author_dialog_get_author (GIGGLE_AUTHOR_DIALOG (dialog));
 			g_debug ("%s: %s", __FUNCTION__, author);
-			gtk_entry_set_text (GTK_ENTRY (priv->author_entry), author);
+			gtk_button_set_label (GTK_BUTTON (priv->author_entry), author);
 			author = NULL;
 			break;
 		default:
