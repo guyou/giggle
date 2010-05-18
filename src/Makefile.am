@@ -14,6 +14,8 @@ bin_PROGRAMS = giggle
 giggle_SOURCES = \
 	eggfindbar.c \
 	eggfindbar.h \
+	giggle-author-dialog.h \
+	giggle-author-dialog.c \
 	giggle-authors-view.c \
 	giggle-authors-view.h \
 	giggle-avatar-cache.c \
