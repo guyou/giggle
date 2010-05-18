@@ -21,6 +21,7 @@
 #define _GIGGLE_AUTHOR_DIALOG_H_
 
 #include <glib-object.h>
+#include <gtk/gtk.h>
 #include <gtk/gtkdialog.h>
 
 G_BEGIN_DECLS
@@ -46,6 +47,7 @@ struct _GiggleAuthorDialog
 };
 
 GType giggle_author_dialog_get_type (void) G_GNUC_CONST;
+GtkWidget *giggle_author_dialog_new (void);
 
 G_END_DECLS
 
