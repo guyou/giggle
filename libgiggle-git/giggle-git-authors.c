@@ -225,7 +225,7 @@ static gboolean
 authors_get_command_line (GiggleJob *job,
 			  gchar    **command_line)
 {
-	*command_line = g_strdup (GIT_COMMAND " log");
+	*command_line = g_strdup (GIT_COMMAND " log '--format=%an <%ae>'");
 	return TRUE;
 }
 
@@ -274,8 +274,8 @@ authors_handle_output (GiggleJob   *job,
 
 	authors = NULL;
 	for (line = lines; line && *line; line++) {
-		if (g_str_has_prefix (*line, "Author: ")) {
-			GiggleAuthor* author = giggle_author_new_from_string (*line + strlen ("Author: "));
+		if (**line != '\0') {
+			GiggleAuthor* author = giggle_author_new_from_string (*line);
 			gchar const * email = giggle_author_get_email (author);
 			gchar const * name  = giggle_author_get_name  (author);
 
