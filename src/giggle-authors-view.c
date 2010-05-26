@@ -117,7 +117,8 @@ authors_view_update (GiggleAuthorsView *view)
 		priv->job = NULL;
 	}
 
-	priv->job = giggle_git_authors_new ();
+	/* Here, we want to list all contributors: authors and committers from all branches */
+	priv->job = giggle_git_authors_new (TRUE, TRUE);
 
 	giggle_git_run_job (priv->git,
 			    priv->job,

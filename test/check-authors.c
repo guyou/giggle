@@ -60,10 +60,32 @@ main (int   argc,
 	GiggleGit* git;
 	GiggleJob* job;
 	gchar* dir;
+	gboolean all = FALSE;
+	gboolean committers = FALSE;
 
 	g_type_init ();
 
 	loop = g_main_loop_new (NULL, FALSE);
+
+	/* Gruik option handling, but its only a test program */
+	int i=1;
+	while (i < argc)
+	{
+		if (argv[i][0] == '-')
+		{
+			switch (argv[i][1])
+			{
+				case 'c': committers = TRUE; break;
+				case 'a': all = TRUE; break;
+			}
+			/* chomp the argument */
+			argc--;
+			argv++;
+		}
+		else
+			/* Break loop */
+			i = argc;
+	}
 
 	if (argc == 1)
 	{
@@ -83,7 +105,7 @@ main (int   argc,
 
 	g_free (dir);
 
-	job = giggle_git_authors_new ();
+	job = giggle_git_authors_new (all, committers);
 	giggle_git_run_job (git, job, callback, loop);
 
 	g_main_loop_run (loop);

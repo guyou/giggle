@@ -44,7 +44,7 @@ struct GiggleGitAuthorsClass {
 };
 
 GType		      giggle_git_authors_get_type (void);
-GiggleJob *           giggle_git_authors_new      (void);
+GiggleJob *           giggle_git_authors_new      (gboolean all, gboolean committers);
 GList *               giggle_git_authors_get_list (GiggleGitAuthors *authors);
 
 G_END_DECLS
