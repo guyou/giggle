@@ -9,7 +9,8 @@ AM_CPPFLAGS = \
 	$(NULL)
 
 check_PROGRAMS = \
-	check-bare
+	check-bare \
+	check-authors
 
 TESTS = $(check_PROGRAMS) \
 	test_gtkbuilder_file_validation.sh
