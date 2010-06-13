@@ -29,6 +29,8 @@ typedef struct GiggleGitAuthorsPriv GiggleGitAuthorsPriv;
 
 struct GiggleGitAuthorsPriv {
 	GList *authors;
+	gboolean all;
+	gboolean committers;
 };
 
 /* START: GiggleFlexibleAuthor API */
@@ -139,6 +141,12 @@ G_DEFINE_TYPE (GiggleGitAuthors, giggle_git_authors, GIGGLE_TYPE_JOB)
 
 #define GET_PRIV(obj) (G_TYPE_INSTANCE_GET_PRIVATE ((obj), GIGGLE_TYPE_GIT_AUTHORS, GiggleGitAuthorsPriv))
 
+enum {
+	PROP_0,
+	PROP_ALL,
+	PROP_COMMITTERS,
+};
+
 static void
 giggle_git_authors_class_init (GiggleGitAuthorsClass *class)
 {
@@ -152,15 +160,31 @@ giggle_git_authors_class_init (GiggleGitAuthorsClass *class)
 	job_class->get_command_line = authors_get_command_line;
 	job_class->handle_output    = authors_handle_output;
 
-#if 0
+	/**
+	 * GiggleGitAuthors:all-branches:
+	 * 
+	 * Include author from all known branches.
+	 **/
 	g_object_class_install_property (object_class,
-					 PROP_MY_PROP,
-					 g_param_spec_string ("my-prop",
-							      "My Prop",
-							      "Describe the property",
-							      NULL,
-							      G_PARAM_READABLE));
-#endif
+					 PROP_ALL,
+					 g_param_spec_boolean ("all-branches",
+							      "All branches",
+							      "Include author from all known branches",
+							      FALSE,
+							      G_PARAM_READWRITE));
+
+	/**
+	 * GiggleGitAuthors:committers:
+	 * 
+	 * Include committers names and emails.
+	 **/
+	g_object_class_install_property (object_class,
+					 PROP_COMMITTERS,
+					 g_param_spec_boolean ("committers",
+							      "Committers",
+							      "Include committers names and emails",
+							      FALSE,
+							      G_PARAM_READWRITE));
 
 	g_type_class_add_private (object_class, sizeof (GiggleGitAuthorsPriv));
 }
@@ -198,6 +222,14 @@ git_authors_get_property (GObject    *object,
 	priv = GET_PRIV (object);
 
 	switch (param_id) {
+	case PROP_ALL:
+		g_value_set_boolean (value, priv->all);
+		break;
+
+	case PROP_COMMITTERS:
+		g_value_set_boolean (value, priv->committers);
+		break;
+
 	default:
 		G_OBJECT_WARN_INVALID_PROPERTY_ID (object, param_id, pspec);
 		break;
@@ -215,6 +247,14 @@ git_authors_set_property (GObject      *object,
 	priv = GET_PRIV (object);
 
 	switch (param_id) {
+	case PROP_ALL:
+		priv->all = g_value_get_boolean (value);
+		break;
+
+	case PROP_COMMITTERS:
+		priv->committers = g_value_get_boolean (value);
+		break;
+
 	default:
 		G_OBJECT_WARN_INVALID_PROPERTY_ID (object, param_id, pspec);
 		break;
@@ -225,7 +265,20 @@ static gboolean
 authors_get_command_line (GiggleJob *job,
 			  gchar    **command_line)
 {
-	*command_line = g_strdup (GIT_COMMAND " log");
+	GiggleGitAuthorsPriv *priv;
+	
+	priv = GET_PRIV (job);
+	
+	/*
+	 * We request a log containing only names and emails.
+	 * We use a dedicated formatter.
+	 */
+	*command_line = g_strconcat (GIT_COMMAND " log '--format=%an <%ae>",
+								priv->committers ? "%n%cn <%ce>" : "",
+								"'",
+								priv->all ? " --all" : "",
+								NULL);
+	
 	return TRUE;
 }
 
@@ -274,8 +327,8 @@ authors_handle_output (GiggleJob   *job,
 
 	authors = NULL;
 	for (line = lines; line && *line; line++) {
-		if (g_str_has_prefix (*line, "Author: ")) {
-			GiggleAuthor* author = giggle_author_new_from_string (*line + strlen ("Author: "));
+		if (**line != '\0') {
+			GiggleAuthor* author = giggle_author_new_from_string (*line);
 			gchar const * email = giggle_author_get_email (author);
 			gchar const * name  = giggle_author_get_name  (author);
 
@@ -337,9 +390,12 @@ authors_handle_output (GiggleJob   *job,
 }
 
 GiggleJob *
-giggle_git_authors_new (void)
+giggle_git_authors_new (gboolean all, gboolean committers)
 {
-	return g_object_new (GIGGLE_TYPE_GIT_AUTHORS, NULL);
+	return g_object_new (GIGGLE_TYPE_GIT_AUTHORS, 
+						"all-branches", all,
+						"committers", committers,
+						NULL);
 }
 
 GList *
