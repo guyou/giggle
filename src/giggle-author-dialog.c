@@ -46,6 +46,7 @@ struct GiggleAuthorDialogPriv {
 	GtkTreeView  *tree;
 	GtkWidget    *ok_button;
 	GtkWidget    *author_entry;
+	GtkWidget    *all_button;
 };
 
 #define GET_PRIV(obj) (G_TYPE_INSTANCE_GET_PRIVATE ((obj), GIGGLE_TYPE_AUTHOR_DIALOG, GiggleAuthorDialogPriv))
@@ -107,6 +108,15 @@ giggle_author_dialog_init (GiggleAuthorDialog *author_window)
 
 	gtk_widget_show_all (priv->author_entry);
 	gtk_box_pack_start (GTK_BOX (GTK_DIALOG (author_window)->vbox), priv->author_entry, FALSE, TRUE, 0);
+
+	/* All branches */
+	priv->all_button = gtk_check_button_new_with_label (_("All branches"));
+	gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (priv->all_button), FALSE);
+	gtk_widget_show_all (priv->all_button);
+	gtk_box_pack_start (GTK_BOX (GTK_DIALOG (author_window)->vbox), priv->all_button, FALSE, TRUE, 0);
+
+	g_signal_connect_swapped (priv->all_button, "toggled",
+		G_CALLBACK (author_dialog_update), author_window);
 
 	/* Known authors */
 	label = gtk_label_new (NULL);
@@ -233,6 +243,7 @@ static void
 author_dialog_update (GiggleAuthorDialog *view)
 {
 	GiggleAuthorDialogPriv *priv;
+	gboolean all = FALSE;
 
 	priv = GET_PRIV (view);
 
@@ -244,9 +255,9 @@ author_dialog_update (GiggleAuthorDialog *view)
 
 	/* Retrieve previous authors
 	 * We only need authors, not committers.
-	 * For performance reason, we focus on current branch
 	 */
-	priv->job = giggle_git_authors_new (FALSE, FALSE);
+	all = gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (priv->all_button));
+	priv->job = giggle_git_authors_new (all, FALSE);
 
 	giggle_git_run_job (priv->git,
 			    priv->job,
