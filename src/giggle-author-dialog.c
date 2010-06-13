@@ -242,7 +242,11 @@ author_dialog_update (GiggleAuthorDialog *view)
 		priv->job = NULL;
 	}
 
-	priv->job = giggle_git_authors_new ();
+	/* Retrieve previous authors
+	 * We only need authors, not committers.
+	 * For performance reason, we focus on current branch
+	 */
+	priv->job = giggle_git_authors_new (FALSE, FALSE);
 
 	giggle_git_run_job (priv->git,
 			    priv->job,
