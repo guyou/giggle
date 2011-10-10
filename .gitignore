@@ -3,7 +3,6 @@ autom4te*
 config.*
 configure
 depcomp
-gnome-doc-utils.make
 install-sh
 libtool
 ltmain.sh

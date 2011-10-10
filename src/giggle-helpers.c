@@ -57,7 +57,7 @@ gboolean
 giggle_list_view_delete_selection (GtkWidget   *treeview,
 				   GdkEventKey *event)
 {
-	if (event->keyval == GDK_Delete) {
+	if (event->keyval == GDK_KEY_Delete) {
 		GtkTreeSelection* sel;
 		sel = gtk_tree_view_get_selection (GTK_TREE_VIEW (treeview));
 

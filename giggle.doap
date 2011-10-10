@@ -18,7 +18,7 @@
     <foaf:Person>
       <foaf:name>Mathias Hasselmann</foaf:name>
       <foaf:mbox rdf:resource="mailto:mathias.hasselmann@gmx.de" />
-      <gnome:userid>tbf</gnome:userid>
+      <gnome:userid>hasselmm</gnome:userid>
     </foaf:Person>
   </maintainer>
   <maintainer>

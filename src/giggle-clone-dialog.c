@@ -1,3 +1,24 @@
+/*
+ * Copyright (C) 2010 Florian Müllner
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #include <glib/gi18n.h>
 
 #include <libgiggle-git/giggle-git.h>
@@ -204,7 +225,8 @@ set_table_row (GtkTable *table,
 
 	if (label) {
 		gtk_label_set_mnemonic_widget (GTK_LABEL (label), widget);
-		gtk_misc_set_alignment (GTK_MISC (label), 0.0, 0.5);
+		gtk_widget_set_halign (label, GTK_ALIGN_START);
+		gtk_widget_set_valign (label, GTK_ALIGN_CENTER);
 		gtk_widget_show (label);
 
 		gtk_table_attach (GTK_TABLE (table), label,
@@ -236,7 +258,6 @@ giggle_clone_dialog_new (const gchar *repo, const gchar *dir) {
 
 	dialog = g_object_new (GIGGLE_TYPE_CLONE_DIALOG,
 	                       "title", _("Clone Repository"),
-	                       "has-separator", FALSE,
 	                       "border-width", 12,
 	                       NULL);
 	priv = dialog->priv;

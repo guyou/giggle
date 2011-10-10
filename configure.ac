@@ -9,17 +9,18 @@ AC_INIT([Giggle],
 AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_SRCDIR([configure.ac])
 AC_CONFIG_MACRO_DIR([m4])
+AC_CONFIG_AUX_DIR([build-aux])
 
-AM_INIT_AUTOMAKE([1.10 check-news -Wall])
+AM_INIT_AUTOMAKE([1.11 check-news -Wall tar-ustar no-dist-gzip dist-xz])
 # Support silent build rules, requires at least automake-1.11. Disable
 # by either passing --disable-silent-rules to configure or passing V=1
 # to make
-m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
+AM_SILENT_RULES([yes])
 
 # Check for programs
 AC_PROG_CC
 AC_PROG_CC_C_O
-AC_PROG_CXX
+AC_PROG_CC_C99
 
 # Initialize libtool
 LT_PREREQ([2.2.6])
@@ -35,12 +36,6 @@ AC_C_INLINE
 AC_FUNC_MKTIME
 AC_CHECK_FUNCS([localtime_r setlocale strchr strrchr strstr])
 
-GNOME_COMPILE_WARNINGS([maximum])
-GNOME_CXX_WARNINGS([yes])
-
-GNOME_MAINTAINER_MODE_DEFINES
-DISABLE_DEPRECATED="$DISABLE_DEPRECATED -DGSEAL_ENABLE"
-AC_SUBST(DISABLE_DEPRECATED)
 
 AC_PATH_PROG(GLIB_GENMARSHAL, glib-genmarshal)
 AC_PATH_PROG(GLIB_MKENUMS, glib-mkenums)
@@ -57,8 +52,8 @@ PKG_CHECK_MODULES(GIGGLE, [
         gio-2.0           >= 2.18
         glib-2.0          >= 2.18
         gthread-2.0       >= 2.16
-        gtk+-2.0          >= 2.18
-        gtksourceview-2.0 >= 2.8
+        gtk+-3.0          >= 2.91
+        gtksourceview-3.0 >= 2.9
 ])
 
 dnl  -----------------------
@@ -66,9 +61,8 @@ dnl | Evolution Data Server |-----------------------------------
 dnl  -----------------------
 
 AC_ARG_ENABLE([evolution-data-server],
-              [AS_HELP_STRING([--disable-evolution-data-server],
-                              [disable features using Evolution Data Server])],,
-              [enable_evolution_data_server=yes])
+              [AS_HELP_STRING([--enable-evolution-data-server],
+                              [Enable features using Evolution Data Server])])
 
 if test "$enable_evolution_data_server" = "yes"
 then
@@ -89,7 +83,7 @@ AC_ARG_ENABLE([terminal],
 
 if test "$enable_terminal" = "yes"
 then
-  PKG_CHECK_MODULES(VTE, [vte >= 0.17])
+  PKG_CHECK_MODULES(VTE, [vte-2.90 >= 0.26])
   AC_DEFINE(ENABLE_VTE, 1, [Use features from vte])
 fi
 
@@ -104,22 +98,22 @@ AC_DEFINE(_GNU_SOURCE, 1, [Enable GNU Extensions])
 dnl Make sure that strptime can be used (read: has gnu extensions)
 AC_MSG_CHECKING([for GNU extensions of strptime()])
 AC_RUN_IFELSE(
-  AC_LANG_PROGRAM(
+  [AC_LANG_PROGRAM(
     [[#include <time.h>]],
     [[const char* date = "1168635922 +0100"; struct tm tm;
       char const* returned = strptime(date, "%s %z", &tm);
-      return (!returned || *returned ? 1 : 0);]]),
-    [AC_MSG_RESULT(available)
-     AC_DEFINE([STRPTIME_HAS_GNU], [1],
-               [strptime() has GNU extensions %s and %z])],
-    [AC_MSG_RESULT(not available)])
+      return (!returned || *returned ? 1 : 0);]])],
+  [AC_MSG_RESULT(available)
+   AC_DEFINE([STRPTIME_HAS_GNU], [1],
+             [strptime() has GNU extensions %s and %z])],
+  [AC_MSG_RESULT(not available)])
 
 dnl Figure out which format string to use for time_t
 AC_MSG_CHECKING([size of time_t type])
 AC_RUN_IFELSE(
-  AC_LANG_PROGRAM(
+  [AC_LANG_PROGRAM(
     [[#include <time.h>]],
-    [[return (sizeof (time_t) == sizeof (long) ? 0 : 1);]]),
+    [[return (sizeof (time_t) == sizeof (long) ? 0 : 1);]])],
   [AC_MSG_RESULT(long)
    AC_DEFINE([GIGGLE_FORMAT_TIME_T], ["ld"], [format string for time_t])],
   [AC_MSG_RESULT(int)
@@ -128,43 +122,18 @@ AC_RUN_IFELSE(
 dnl  ------------------
 dnl | Language Support |---------------------------------------
 dnl  ------------------
-IT_PROG_INTLTOOL([0.40.0])
-AC_SUBST([GETTEXT_PACKAGE], [giggle])
-AM_GNU_GETTEXT_VERSION([0.17])
-AM_GLIB_GNU_GETTEXT
-AC_DEFINE([GETTEXT_PACKAGE], [PACKAGE_TARNAME],[Define to the gettext package name])
-AM_GLIB_DEFINE_LOCALEDIR(LOCALEDIR)
+IT_PROG_INTLTOOL([0.41.0])
 
-AC_SUBST([CONFIG_STATUS_DEPENDENCIES],['$(top_srcdir)/po/LINGUAS'])
+AM_GNU_GETTEXT_VERSION([0.17])
+AM_GNU_GETTEXT([external])
+
+AC_SUBST([GETTEXT_PACKAGE], [giggle])
+AC_DEFINE([GETTEXT_PACKAGE], [PACKAGE_TARNAME],[Define to the gettext package name])
 
 dnl  -------------
 dnl | User Manual |---------------------------------------
 dnl  -------------
-GNOME_DOC_INIT([0.17.3])
-
-dnl  -----------------------
-dnl | GTK+ platform check   |----------------------------------
-dnl  -----------------------
-IGE_PLATFORM_CHECK
-if test "x$IGE_PLATFORM" = xx11; then
-   PLATFORM_CFLAGS=
-   PLATFORM_LDFLAGS=
-else
-   PLATFORM_CFLAGS=
-   PLATFORM_LDFLAGS="-framework Carbon"
-fi
-AC_SUBST(PLATFORM_CFLAGS)
-AC_SUBST(PLATFORM_LDFLAGS)
-
-
-dnl  --------------------------------------
-dnl | GConftool detection for url-handlers |-------------------
-dnl  --------------------------------------
-AC_PATH_PROG([GCONFTOOL], [gconftool-2], [no])
-if test "x$GCONFTOOL" != xno; then
-   AM_GCONF_SOURCE_2
-fi
-
+YELP_HELP_INIT
 
 dnl  -----------------------
 dnl | GIT command detection |----------------------------------
@@ -188,6 +157,67 @@ else
   AC_DEFINE_UNQUOTED(GIT_COMMAND,"$GIT_COMMAND",[GIT command path])
 fi
 
+
+dnl ---------------------------------------------------------------------------
+dnl - Use strict options (default enabled for devs, disabled in releases)
+dnl ---------------------------------------------------------------------------
+if test -d "${srcdir}/.git"; then
+	default_strict=yes
+else
+	default_strict=no
+fi
+
+AC_ARG_ENABLE([strict],
+              [AS_HELP_STRING([--enable-strict],
+                              [Enable strict compilation options])],
+              [enable_strict=$enableval],
+              [enable_strict=$default_strict])
+
+if test x$enable_strict != xno; then
+	CPPFLAGS="$CPPFLAGS -DG_DISABLE_SINGLE_INCLUDES -DGTK_DISABLE_SINGLE_INCLUDES"
+	CPPFLAGS="$CPPFLAGS -DG_DISABLE_DEPRECATED -DGTK_DISABLE_DEPRECATED -DGDK_DISABLE_DEPRECATED"
+	CPPFLAGS="$CPPFLAGS -DGSEAL_ENABLE"
+#	if test "$GCC" = "yes"; then
+#		CPPFLAGS="$CPPFLAGS -Werror"
+#	fi
+fi
+
+dnl ---------------------------------------------------------------------------
+dnl - Extra verbose warning switches
+dnl ---------------------------------------------------------------------------
+
+if test "$GCC" = "yes"; then
+	WARNINGFLAGS_C="$WARNINGFLAGS_C -Wall"
+	WARNINGFLAGS_C="$WARNINGFLAGS_C -Wcast-align -Wno-uninitialized"
+	WARNINGFLAGS_C="$WARNINGFLAGS_C -Wmissing-declarations"
+#	WARNINGFLAGS_C="$WARNINGFLAGS_C -Wredundant-decls"
+	WARNINGFLAGS_C="$WARNINGFLAGS_C -Wpointer-arith"
+	WARNINGFLAGS_C="$WARNINGFLAGS_C -Wcast-align"
+	WARNINGFLAGS_C="$WARNINGFLAGS_C -Wwrite-strings"
+	WARNINGFLAGS_C="$WARNINGFLAGS_C -Winit-self"
+	WARNINGFLAGS_C="$WARNINGFLAGS_C -Wreturn-type"
+#	WARNINGFLAGS_C="$WARNINGFLAGS_C -Wformat-nonliteral"
+	WARNINGFLAGS_C="$WARNINGFLAGS_C -Wformat-security"
+	WARNINGFLAGS_C="$WARNINGFLAGS_C -Wmissing-include-dirs"
+	WARNINGFLAGS_C="$WARNINGFLAGS_C -Wmissing-format-attribute"
+	WARNINGFLAGS_C="$WARNINGFLAGS_C -Wclobbered"
+	WARNINGFLAGS_C="$WARNINGFLAGS_C -Wempty-body"
+	WARNINGFLAGS_C="$WARNINGFLAGS_C -Wignored-qualifiers"
+	WARNINGFLAGS_C="$WARNINGFLAGS_C -Wsign-compare"
+	WARNINGFLAGS_C="$WARNINGFLAGS_C -Wtype-limits"
+	WARNINGFLAGS_C="$WARNINGFLAGS_C -Wuninitialized"
+	WARNINGFLAGS_C="$WARNINGFLAGS_C -Waggregate-return"
+	WARNINGFLAGS_C="$WARNINGFLAGS_C -Wdeclaration-after-statement"
+	WARNINGFLAGS_C="$WARNINGFLAGS_C -Wshadow"
+	WARNINGFLAGS_C="$WARNINGFLAGS_C -Wno-strict-aliasing"
+	WARNINGFLAGS_C="$WARNINGFLAGS_C -Winline"
+	WARNINGFLAGS_C="$WARNINGFLAGS_C -Wmissing-parameter-type"
+	WARNINGFLAGS_C="$WARNINGFLAGS_C -Woverride-init"
+else
+	WARNINGFLAGS_C=""
+fi
+AC_SUBST(WARNINGFLAGS_C)
+
 dnl -----------------------------------------------------------
 
 
@@ -208,6 +238,9 @@ AC_OUTPUT
 
 echo
 echo "Prefix:                    $prefix"
+echo "datadir:                   ${datadir}"
+echo "CFLAGS:                    ${CFLAGS}"
+echo "CPPFLAGS:                  ${CPPFLAGS}"
 echo "GIT command path:          $GIT_COMMAND"
 echo "Use Evolution Data Server: $enable_evolution_data_server"
 echo "Use VTE terminal widget:   $enable_terminal"

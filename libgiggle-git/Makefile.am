@@ -4,7 +4,7 @@ AM_CPPFLAGS = \
 	-I$(top_srcdir) \
 	-DGLADEDIR='"$(pkgdatadir)/glade"' \
 	$(GIGGLE_CFLAGS) $(PLATFORM_CFLAGS) \
-	$(WARN_CFLAGS)
+	$(WARNINGFLAGS_C)
 
 AM_LDFLAGS = \
 	$(PLATFORM_LDFLAGS)

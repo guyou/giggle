@@ -8,8 +8,7 @@ INTLTOOL = \
 	intltool-update.in
 
 EXTRA_DIST = \
-	$(INTLTOOL) \
-	gnome-doc-utils.make
+	$(INTLTOOL)
 
 DISTCLEANFILES = \
 	intltool-extract \

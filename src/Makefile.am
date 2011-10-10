@@ -2,8 +2,9 @@ AM_CPPFLAGS = \
 	-I$(top_srcdir) \
 	-DICONDIR='"$(datadir)/icons"' \
 	-DGLADEDIR='"$(pkgdatadir)/glade"' \
+	-DLOCALEDIR=\"$(localedir)\" \
 	$(GIGGLE_CFLAGS) $(PLATFORM_CFLAGS) \
-	$(WARN_CFLAGS)
+	$(WARNINGFLAGS_C)
 
 AM_LDFLAGS = \
 	$(PLATFORM_LDFLAGS) \
@@ -74,16 +75,9 @@ giggle_SOURCES = \
 	$(NULL)
 
 giggle_LDADD = \
+	$(GIGGLE_LIBS) \
+	../libgiggle/libgiggle.la \
 	../libgiggle-git/libgiggle-git.la
-
-if IGE_PLATFORM_OSX
-
-giggle_SOURCES += \
-	ige-mac-menu.c \
-	ige-mac-menu.h \
-	$(NULL)
-
-endif
 
 #test_graph_renderer_SOURCES = \
 #	giggle-revision.c giggle-revision.h \

@@ -1,9 +1,10 @@
-include $(top_srcdir)/gnome-doc-utils.make
+@YELP_HELP_RULES@
 
-DOC_ID = giggle
-DOC_INCLUDES =
+HELP_ID = giggle
 
-DOC_PAGES = \
+HELP_LINGUAS = cs de es fr pl sl
+
+HELP_FILES = \
 	browse-view.page \
 	history-view.page \
 	index.page \
@@ -12,9 +13,6 @@ DOC_PAGES = \
 	opening-repositories.page \
 	tagging-commits.page
 
-DOC_FIGURES = \
+HELP_MEDIA = \
 	figures/giggle-browse_view_sections.png \
 	figures/giggle-history_view_sections.png
-
-DOC_LINGUAS = de es pl
-dist-hook: doc-dist-hook

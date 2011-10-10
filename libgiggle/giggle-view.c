@@ -44,7 +44,7 @@ enum {
 	LAST_SIGNAL
 };
 
-G_DEFINE_ABSTRACT_TYPE (GiggleView, giggle_view, GTK_TYPE_VBOX)
+G_DEFINE_ABSTRACT_TYPE (GiggleView, giggle_view, GTK_TYPE_BOX)
 
 static guint signals[LAST_SIGNAL] = { 0, };
 
@@ -265,6 +265,8 @@ giggle_view_class_init (GiggleViewClass *class)
 static void
 giggle_view_init (GiggleView *view)
 {
+	gtk_orientable_set_orientation (GTK_ORIENTABLE (view),
+	                                GTK_ORIENTATION_VERTICAL);
 }
 
 GtkAction *

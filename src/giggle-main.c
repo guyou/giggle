@@ -82,13 +82,13 @@ main (int    argc,
 	g_free (description);
 
 	if (!g_option_context_parse (context, &argc, &argv, &error)) {
-		char *basename = g_filename_display_basename (argv[0]);
+		gchar *the_basename = g_filename_display_basename (argv[0]);
 
-		g_printerr ("%s: %s\n", basename, error->message);
-		g_printerr (_("Try `%s --help' for more information.\n"), basename);
+		g_printerr ("%s: %s\n", the_basename, error->message);
+		g_printerr (_("Try `%s --help' for more information.\n"), the_basename);
 
 		result = EXIT_FAILURE;
-		g_free (basename);
+		g_free (the_basename);
 
 		goto end;
 	}

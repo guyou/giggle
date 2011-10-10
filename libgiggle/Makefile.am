@@ -5,7 +5,7 @@ AM_CPPFLAGS = \
 	-DGLADEDIR='"$(pkgdatadir)/glade"' \
 	-DPLUGINDIR='"$(pkglibdir)/plugins/$(VERSION)"' \
 	$(GIGGLE_CFLAGS) $(PLATFORM_CFLAGS) \
-	$(WARN_CFLAGS)
+	$(WARNINGFLAGS_C)
 
 lib_LTLIBRARIES = libgiggle.la
 
