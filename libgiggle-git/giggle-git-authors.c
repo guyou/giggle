@@ -222,6 +222,10 @@ git_authors_get_property (GObject    *object,
 		    GValue     *value,
 		    GParamSpec *pspec)
 {
+	GiggleGitAuthorsPriv *priv;
+
+	priv = GET_PRIV (object);
+
 	switch (param_id) {
 	case PROP_ALL:
 		g_value_set_boolean (value, priv->all);
@@ -243,6 +247,10 @@ git_authors_set_property (GObject      *object,
 		    const GValue *value,
 		    GParamSpec   *pspec)
 {
+	GiggleGitAuthorsPriv *priv;
+
+	priv = GET_PRIV (object);
+
 	switch (param_id) {
 	case PROP_ALL:
 		priv->all = g_value_get_boolean (value);

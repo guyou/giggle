@@ -90,8 +90,8 @@ giggle_author_dialog_init (GiggleAuthorDialog *author_window)
 	gtk_window_set_default_size (GTK_WINDOW (author_window), 500, 380);
 	gtk_window_set_title (GTK_WINDOW (author_window), _("Commit author"));
 
-	gtk_container_set_border_width (GTK_CONTAINER (GTK_DIALOG (author_window)->vbox), 7);
-	gtk_box_set_homogeneous (GTK_BOX (GTK_DIALOG (author_window)->vbox), FALSE);
+	gtk_container_set_border_width (GTK_CONTAINER (gtk_dialog_get_content_area (GTK_DIALOG (author_window))), 7);
+	gtk_box_set_homogeneous (GTK_BOX (gtk_dialog_get_content_area (GTK_DIALOG (author_window))), FALSE);
 
 	/* Author */
 	label = gtk_label_new (NULL);
@@ -100,20 +100,20 @@ giggle_author_dialog_init (GiggleAuthorDialog *author_window)
 	gtk_label_set_markup (GTK_LABEL (label), str);
 	g_free (str);
 	gtk_widget_show_all (label);
-	gtk_box_pack_start (GTK_BOX (GTK_DIALOG (author_window)->vbox), label, FALSE, TRUE, 0);
+	gtk_box_pack_start (GTK_BOX (gtk_dialog_get_content_area (GTK_DIALOG (author_window))), label, FALSE, TRUE, 0);
 
 	priv->author_entry = gtk_entry_new ();
 
 	g_signal_connect(priv->author_entry, "changed", G_CALLBACK(author_dialog_entry_changed), author_window);
 
 	gtk_widget_show_all (priv->author_entry);
-	gtk_box_pack_start (GTK_BOX (GTK_DIALOG (author_window)->vbox), priv->author_entry, FALSE, TRUE, 0);
+	gtk_box_pack_start (GTK_BOX (gtk_dialog_get_content_area (GTK_DIALOG (author_window))), priv->author_entry, FALSE, TRUE, 0);
 
 	/* All branches */
 	priv->all_button = gtk_check_button_new_with_label (_("All branches"));
 	gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (priv->all_button), FALSE);
 	gtk_widget_show_all (priv->all_button);
-	gtk_box_pack_start (GTK_BOX (GTK_DIALOG (author_window)->vbox), priv->all_button, FALSE, TRUE, 0);
+	gtk_box_pack_start (GTK_BOX (gtk_dialog_get_content_area (GTK_DIALOG (author_window))), priv->all_button, FALSE, TRUE, 0);
 
 	g_signal_connect_swapped (priv->all_button, "toggled",
 		G_CALLBACK (author_dialog_update), author_window);
@@ -125,7 +125,7 @@ giggle_author_dialog_init (GiggleAuthorDialog *author_window)
 	gtk_label_set_markup (GTK_LABEL (label), str);
 	g_free (str);
 	gtk_widget_show_all (label);
-	gtk_box_pack_start (GTK_BOX (GTK_DIALOG (author_window)->vbox), label, FALSE, TRUE, 0);
+	gtk_box_pack_start (GTK_BOX (gtk_dialog_get_content_area (GTK_DIALOG (author_window))), label, FALSE, TRUE, 0);
 
 	view = gtk_tree_view_new ();
 	priv->tree = GTK_TREE_VIEW (view);
@@ -148,7 +148,7 @@ giggle_author_dialog_init (GiggleAuthorDialog *author_window)
 	gtk_container_add (GTK_CONTAINER (scrolled_window), view);
 
 	gtk_widget_show_all (scrolled_window);
-	gtk_box_pack_start (GTK_BOX (GTK_DIALOG (author_window)->vbox), scrolled_window, TRUE, TRUE, 0);
+	gtk_box_pack_start (GTK_BOX (gtk_dialog_get_content_area (GTK_DIALOG (author_window))), scrolled_window, TRUE, TRUE, 0);
 
 	g_object_set (author_window,
 		      "has-separator", FALSE,
@@ -213,9 +213,9 @@ author_dialog_job_callback (GiggleGit *git,
 		gtk_widget_destroy (dialog);
 	} else {
 		GtkListStore *store;
-		GtkTreeView *view;
+		GtkTreeView  *view;
 		GtkTreeIter   iter;
-		GList                 *authors;
+		GList        *authors;
 
 		view = priv->tree;
 
@@ -223,7 +223,9 @@ author_dialog_job_callback (GiggleGit *git,
 		authors = giggle_git_authors_get_list (GIGGLE_GIT_AUTHORS (job));
 
 		for(; authors; authors = g_list_next (authors)) {
-			gchar *name = g_strdup (giggle_author_get_string (GIGGLE_AUTHOR (authors->data)));
+			gchar *name = g_strdup_printf ("%s <%s>",
+                                                       giggle_author_get_name (GIGGLE_AUTHOR (authors->data)),
+                                                       giggle_author_get_email (GIGGLE_AUTHOR (authors->data)));
 			gtk_list_store_append (store, &iter);
 			gtk_list_store_set (store, &iter,
 					    COL_AUTHOR, name,

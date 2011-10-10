@@ -22,7 +22,6 @@
 
 #include <glib-object.h>
 #include <gtk/gtk.h>
-#include <gtk/gtkdialog.h>
 
 G_BEGIN_DECLS
 
